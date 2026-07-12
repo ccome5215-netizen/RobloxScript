@@ -1,2 +1,0 @@
-# RobloxScript
-Just Roblox Script
