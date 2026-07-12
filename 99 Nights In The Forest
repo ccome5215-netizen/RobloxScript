@@ -1,0 +1,4157 @@
+-- ╔═══════════════════════════════════════════════════════════╗
+-- ║  🌙 99 NIGHTS: ETERNAL NEXUS - ULTIMATE EDITION         ║
+-- ║  All Features Improved & Optimized v3.0                 ║
+-- ║  Created with 💜 | Save System + Auto Features          ║
+-- ╚═══════════════════════════════════════════════════════════╝
+
+-- ════════════════════════════════════════════════════════════
+-- LOADING SCREEN
+-- ════════════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
+-- Create Loading Screen
+local loadingGui = Instance.new("ScreenGui")
+loadingGui.Name = "99NightsLoading"
+loadingGui.ResetOnSpawn = false
+loadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+loadingGui.Parent = player:WaitForChild("PlayerGui")
+
+local loadingFrame = Instance.new("Frame")
+loadingFrame.Size = UDim2.fromScale(1, 1)
+loadingFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+loadingFrame.BorderSizePixel = 0
+loadingFrame.ZIndex = 1000
+loadingFrame.Parent = loadingGui
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.fromScale(0.8, 0.15)
+titleLabel.Position = UDim2.fromScale(0.5, 0.35)
+titleLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "🌙 99 NIGHTS: ETERNAL NEXUS"
+titleLabel.TextSize = 36
+titleLabel.TextColor3 = Color3.fromRGB(138, 43, 226)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.ZIndex = 1001
+titleLabel.Parent = loadingFrame
+
+local versionLabel = Instance.new("TextLabel")
+versionLabel.Size = UDim2.fromScale(0.5, 0.05)
+versionLabel.Position = UDim2.fromScale(0.5, 0.45)
+versionLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+versionLabel.BackgroundTransparency = 1
+versionLabel.Text = "v3.0 Ultimate Edition"
+versionLabel.TextSize = 18
+versionLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+versionLabel.Font = Enum.Font.Gotham
+versionLabel.ZIndex = 1001
+versionLabel.Parent = loadingFrame
+
+local barBg = Instance.new("Frame")
+barBg.Size = UDim2.fromScale(0.5, 0.03)
+barBg.Position = UDim2.fromScale(0.5, 0.6)
+barBg.AnchorPoint = Vector2.new(0.5, 0.5)
+barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+barBg.BorderSizePixel = 0
+barBg.ZIndex = 1001
+barBg.Parent = loadingFrame
+Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+
+local loadingBar = Instance.new("Frame")
+loadingBar.Size = UDim2.fromScale(0, 1)
+loadingBar.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+loadingBar.BorderSizePixel = 0
+loadingBar.ZIndex = 1002
+loadingBar.Parent = barBg
+Instance.new("UICorner", loadingBar).CornerRadius = UDim.new(1, 0)
+
+local loadingText = Instance.new("TextLabel")
+loadingText.Size = UDim2.fromScale(0.5, 0.05)
+loadingText.Position = UDim2.fromScale(0.5, 0.7)
+loadingText.AnchorPoint = Vector2.new(0.5, 0.5)
+loadingText.BackgroundTransparency = 1
+loadingText.Text = "Initializing..."
+loadingText.TextSize = 14
+loadingText.TextColor3 = Color3.fromRGB(150, 150, 150)
+loadingText.Font = Enum.Font.Gotham
+loadingText.ZIndex = 1001
+loadingText.Parent = loadingFrame
+
+local function updateLoading(progress, text)
+    loadingBar:TweenSize(UDim2.fromScale(progress, 1), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+    loadingText.Text = text
+    task.wait(0.3)  -- Wait so user can see progress
+end
+
+updateLoading(0.1, "Loading services...")
+task.wait(0.2)
+
+-- ════════════════════════════════════════════════════════════
+-- SAVE/LOAD SYSTEM
+-- ════════════════════════════════════════════════════════════
+
+local saveFileName = "99Nights_Settings.json"
+local savedSettings = {
+    speed = 16,
+    jumpPower = 50,
+    saplingPattern = "Me",
+    saplingCount = 100,
+    saplingRadius = 150,
+    centerPosition = "Me",
+    killAuraRadius = 200,
+    spinSpeed = 50,
+    spinRadius = 100,
+    waypoints = {}
+}
+
+local function saveSettings()
+    local success, err = pcall(function()
+        local data = game:GetService("HttpService"):JSONEncode(savedSettings)
+        writefile(saveFileName, data)
+        print("💾 Settings saved!")
+    end)
+    if not success then
+        warn("❌ Failed to save settings:", err)
+    end
+end
+
+local function loadSettings()
+    if isfile and isfile(saveFileName) then
+        local success, result = pcall(function()
+            local data = readfile(saveFileName)
+            return game:GetService("HttpService"):JSONDecode(data)
+        end)
+        if success and result then
+            for key, value in pairs(result) do
+                savedSettings[key] = value
+            end
+            print("📂 Settings loaded!")
+            return true
+        end
+    end
+    print("📂 No saved settings found, using defaults")
+    return false
+end
+
+updateLoading(0.2, "Loading saved settings...")
+task.wait(0.2)
+loadSettings()
+task.wait(0.2)
+
+-- ════════════════════════════════════════════════════════════
+-- AUTO-DETECT VOID DEPTH
+-- ════════════════════════════════════════════════════════════
+
+local voidY = -500 -- Default
+
+local function detectVoidDepth()
+    updateLoading(0.3, "Detecting void depth...")
+    task.wait(0.2)
+    
+    local workspace = game:GetService("Workspace")
+    
+    -- Method 1: Try FallenPartsDestroyHeight (may not exist or be readable)
+    local success, result = pcall(function()
+        return workspace.FallenPartsDestroyHeight
+    end)
+    
+    if success and result then
+        voidY = result
+        print("🌀 Void from FallenPartsDestroyHeight: Y = " .. voidY)
+        return
+    end
+    
+    -- Method 2: Find lowest solid ground
+    local lowestY = 0
+    local foundGround = false
+    
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.CanCollide then
+            foundGround = true
+            if obj.Position.Y < lowestY then
+                lowestY = obj.Position.Y
+            end
+        end
+    end
+    
+    if foundGround and lowestY < 0 then
+        voidY = lowestY - 50
+        print("🌀 Void from lowest ground: Y = " .. voidY .. " (ground at Y = " .. lowestY .. ")")
+    else
+        voidY = -500
+        print("🌀 Void using default: Y = " .. voidY)
+    end
+end
+
+detectVoidDepth()
+task.wait(0.2)
+
+updateLoading(0.4, "Initializing systems...")
+task.wait(0.2)
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- ════════════════════════════════════════════════════════════
+-- UTILITY FUNCTIONS
+-- ════════════════════════════════════════════════════════════
+
+local function new(class, props)
+    local obj = Instance.new(class)
+    if props then for k, v in pairs(props) do obj[k] = v end end
+    return obj
+end
+
+local function getHrp()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 5)
+end
+
+local function getHumanoid()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:FindFirstChild("Humanoid")
+end
+
+local function getNil(name, class)
+    for _, v in ipairs(getnilinstances()) do
+        if v.Name == name and v.ClassName == class then
+            return v
+        end
+    end
+    return nil
+end
+
+-- ════════════════════════════════════════════════════════════
+-- MAIN GUI SETUP
+-- ════════════════════════════════════════════════════════════
+
+local mainGui = new("ScreenGui", {
+    Parent = game:GetService("CoreGui"),
+    Name = "EternalNexusGUI",
+    ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Global
+})
+
+-- Show/Hide Toggle Button
+local toggleBtn = new("TextButton", {
+    Parent = mainGui,
+    Size = UDim2.fromOffset(50, 50),
+    Position = UDim2.fromScale(0.01, 0.5),
+    BackgroundColor3 = Color3.fromRGB(138, 43, 226),
+    Text = "🌙",
+    Font = Enum.Font.GothamBold,
+    TextSize = 24,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    BorderSizePixel = 0,
+    Active = true,
+    Draggable = true,
+    ZIndex = 100
+})
+new("UICorner", { Parent = toggleBtn, CornerRadius = UDim.new(1, 0) })
+new("UIStroke", { Parent = toggleBtn, Color = Color3.fromRGB(200, 100, 255), Thickness = 3 })
+
+updateLoading(0.5, "Creating GUI...")
+
+-- Main Frame (Bigger size)
+local mainFrame = new("Frame", {
+    Parent = mainGui,
+    Size = UDim2.fromScale(0.65, 0.8),
+    Position = UDim2.fromScale(0.175, 0.1),
+    BackgroundColor3 = Color3.fromRGB(20, 20, 25),
+    BorderSizePixel = 0,
+    Active = true,
+    ZIndex = 10
+})
+new("UICorner", { Parent = mainFrame, CornerRadius = UDim.new(0, 15) })
+new("UIStroke", { Parent = mainFrame, Color = Color3.fromRGB(138, 43, 226), Thickness = 3 })
+
+-- Draggable Logic for Main Frame
+local dragging, dragInput, dragStart, startPos
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        
+        -- Update dropdown positions while dragging (instant, no delay)
+        if filterList and filterList.Visible then
+            pcall(updateFilterListPosition)
+        end
+        if bringToList and bringToList.Visible then
+            pcall(updateBringToListPosition)
+        end
+        if speedList and speedList.Visible then
+            pcall(updateSpeedListPosition)
+        end
+    end
+end)
+
+-- Header
+local header = new("Frame", {
+    Parent = mainFrame,
+    Size = UDim2.new(1, 0, 0, 50),
+    BackgroundColor3 = Color3.fromRGB(138, 43, 226),
+    BorderSizePixel = 0,
+    ZIndex = 11
+})
+new("UICorner", { Parent = header, CornerRadius = UDim.new(0, 15) })
+
+local titleLabel = new("TextLabel", {
+    Parent = header,
+    Size = UDim2.new(1, -60, 1, 0),
+    Position = UDim2.fromOffset(15, 0),
+    BackgroundTransparency = 1,
+    Text = "🌙 99 NIGHTS: ETERNAL NEXUS",
+    TextSize = 20,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    ZIndex = 12
+})
+
+local closeBtn = new("TextButton", {
+    Parent = header,
+    Size = UDim2.fromOffset(35, 35),
+    Position = UDim2.new(1, -45, 0.5, -17.5),
+    BackgroundColor3 = Color3.fromRGB(220, 53, 69),
+    Text = "✕",
+    TextSize = 20,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = closeBtn, CornerRadius = UDim.new(1, 0) })
+
+-- Tab Container (Scrollable Horizontally for 4+ tabs)
+local tabContainer = new("ScrollingFrame", {
+    Parent = mainFrame,
+    Size = UDim2.new(1, 0, 0, 45),
+    Position = UDim2.fromOffset(0, 50),
+    BackgroundColor3 = Color3.fromRGB(30, 30, 35),
+    BorderSizePixel = 0,
+    ScrollBarThickness = 4,
+    ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226),
+    ScrollingDirection = Enum.ScrollingDirection.X,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    ZIndex = 11
+})
+
+local tabListLayout = new("UIListLayout", {
+    Parent = tabContainer,
+    FillDirection = Enum.FillDirection.Horizontal,
+    Padding = UDim.new(0, 4),
+    SortOrder = Enum.SortOrder.LayoutOrder
+})
+
+tabListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    tabContainer.CanvasSize = UDim2.new(0, tabListLayout.AbsoluteContentSize.X + 10, 0, 0)
+end)
+
+-- Content Container
+local contentContainer = new("Frame", {
+    Parent = mainFrame,
+    Size = UDim2.new(1, -20, 1, -115),
+    Position = UDim2.fromOffset(10, 105),
+    BackgroundTransparency = 1,
+    ZIndex = 11
+})
+
+-- Tab System
+local tabs = {}
+local tabButtons = {}
+local currentTab = nil
+
+local function createTab(name, icon, order)
+    -- Tab Button (Fixed width for horizontal scrolling)
+    local tabBtn = new("TextButton", {
+        Parent = tabContainer,
+        Size = UDim2.new(0, 180, 1, -10),
+        BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+        Text = icon .. " " .. name,
+        TextSize = 14,
+        TextColor3 = Color3.fromRGB(200, 200, 200),
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+        ZIndex = 12
+    })
+    new("UICorner", { Parent = tabBtn, CornerRadius = UDim.new(0, 8) })
+    
+    -- Tab Content (ScrollingFrame)
+    local tabContent = new("ScrollingFrame", {
+        Parent = contentContainer,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 6,
+        ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226),
+        Visible = false,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ZIndex = 11
+    })
+    
+    local listLayout = new("UIListLayout", {
+        Parent = tabContent,
+        Padding = UDim.new(0, 10),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    
+    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        tabContent.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20)
+    end)
+    
+    tabs[name] = tabContent
+    tabButtons[name] = tabBtn
+    
+    tabBtn.MouseButton1Click:Connect(function()
+        for tabName, content in pairs(tabs) do
+            content.Visible = false
+            tabButtons[tabName].BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+            tabButtons[tabName].TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+        tabContent.Visible = true
+        tabBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+        tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        currentTab = name
+    end)
+    
+    return tabContent
+end
+
+-- Create Tabs
+local tabMain = createTab("Main", "⚔️", 1)
+local tab1 = createTab("Bring Manager", "🎒", 2)
+local tab2 = createTab("Automatic", "⚡", 3)
+local tab3 = createTab("Player Modifier", "👤", 4)
+local tab4 = createTab("Teleport", "🌐", 5)
+
+-- Set default tab to Main
+tabs["Main"].Visible = true
+tabButtons["Main"].BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+tabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
+currentTab = "Main"
+
+-- Toggle Button Logic
+closeBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    toggleBtn.Visible = true
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+    if not mainFrame.Visible then
+        toggleBtn.Visible = true
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════
+-- MAIN TAB: KILL AURA
+-- ════════════════════════════════════════════════════════════
+
+
+-- ════════════════════════════════════════════════════════════
+updateLoading(0.6, "Loading Bring Manager...")
+
+-- TAB 1: BRING MANAGER (FULL RESTORATION)
+-- ════════════════════════════════════════════════════════════
+
+-- Bring Manager Variables
+local workspaceItemsFolderName = "Items"
+local SpeedMap = {
+    UltraInstantly = -1,
+    Instant = 0,
+    ["Ultra Fast"] = 0.05,
+    Fast = 0.25,
+    Slow = 0.6
+}
+local currentSpeed = "Fast"
+local currentDelay = SpeedMap[currentSpeed]
+local currentFilter = "All Items"
+local bringLimitDefault = 10
+local previousLimit = bringLimitDefault
+local noLimitEnabled = false
+local bringTarget = "Me"
+local bringTargets = {
+    Me = nil,
+    Campfire = Vector3.new(0.055, 17.578, 0.212),
+    Scrapper = Vector3.new(20.111, 10.234, -4.688),
+    Void = Vector3.new(0, -500, 0),
+}
+local playerNames = {}
+local multiItemMode = false
+local selectedItems = {}
+local bringItemPrivate = false
+local batchSize = 1
+local isBringing = false
+
+local function getDragRemote()
+    local remote = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    if remote and remote:FindFirstChild("RequestStartDraggingItem") then return remote.RequestStartDraggingItem end
+    if ReplicatedStorage:FindFirstChild("RequestStartDraggingItem") then return ReplicatedStorage.RequestStartDraggingItem end
+    return nil
+end
+
+local function ensurePrimary(model)
+    if not model or not model:IsA("Model") then return false end
+    if model.PrimaryPart then return true end
+    for _, d in ipairs(model:GetDescendants()) do
+        if d:IsA("BasePart") then model.PrimaryPart = d return true end
+    end
+    return false
+end
+
+local function getItemsFolder()
+    return workspace:FindFirstChild(workspaceItemsFolderName)
+end
+
+local function updatePlayerList()
+    playerNames = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player then
+            table.insert(playerNames, p.Name)
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(function(newPlayer)
+    if newPlayer ~= player then
+        table.insert(playerNames, newPlayer.Name)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(leftPlayer)
+    for i, name in ipairs(playerNames) do
+        if name == leftPlayer.Name then
+            table.remove(playerNames, i)
+            break
+        end
+    end
+end)
+
+-- Item Counter
+local countLabel = new("TextLabel", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 35),
+    BackgroundColor3 = Color3.fromRGB(45, 45, 50),
+    Text = "📦 Items found: 0",
+    TextSize = 16,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamMedium,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = countLabel, CornerRadius = UDim.new(0, 10) })
+
+local function updateCountLabel()
+    local folder = getItemsFolder()
+    if folder then
+        countLabel.Text = "📦 Items found: " .. #folder:GetChildren()
+    else
+        countLabel.Text = "📦 Items found: 0"
+    end
+end
+
+-- Auto refresh setup
+task.spawn(function()
+    task.wait(1)
+    local folder = getItemsFolder()
+    if folder then
+        folder.ChildAdded:Connect(updateCountLabel)
+        folder.ChildRemoved:Connect(updateCountLabel)
+    end
+end)
+
+-- Scan button
+local refreshBtn = new("TextButton", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 35),
+    BackgroundColor3 = Color3.fromRGB(60, 60, 65),
+    Text = "🔄 Scan Items",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = refreshBtn, CornerRadius = UDim.new(0, 10) })
+refreshBtn.MouseButton1Click:Connect(updateCountLabel)
+
+-- Helper functions for dropdowns
+local filterList, speedList, bringToList
+local filterSearchBox
+
+local function closeAllDropdowns()
+    if filterList then filterList.Visible = false end
+    if speedList then speedList.Visible = false end
+    if bringToList then bringToList.Visible = false end
+    if filterSearchBox and filterSearchBox:IsDescendantOf(game) then
+        pcall(function() filterSearchBox:ReleaseFocus() end)
+    end
+end
+
+local function buildMatcher()
+    if currentFilter == "All Items" then
+        return function(name)
+            local ln = tostring(name or ""):lower()
+            return not ln:find("chest", 1, true) and not ln:find("crate", 1, true)
+        end
+    else
+        local key = tostring(currentFilter or ""):lower()
+        return function(name)
+            return tostring(name or ""):lower() == key
+        end
+    end
+end
+
+local function collectFilterOptions()
+    local defaults = { "All Items" }
+    local seen = { ["all items"] = true }
+    local folder = getItemsFolder()
+    if folder then
+        for _, item in ipairs(folder:GetChildren()) do
+            if item:IsA("Model") then
+                local name = tostring(item.Name or "")
+                if name ~= "" and not name:lower():find("chest", 1, true) and not name:lower():find("crate", 1, true) and not seen[name:lower()] then
+                    table.insert(defaults, name)
+                    seen[name:lower()] = true
+                end
+            end
+        end
+    end
+    return defaults
+end
+
+-- BRING TO DROPDOWN
+local bringToLabel = new("TextLabel", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 20),
+    BackgroundTransparency = 1,
+    Text = "📍 Bring To:",
+    TextSize = 13,
+    TextColor3 = Color3.fromRGB(150, 150, 150),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 12
+})
+
+local bringToBtn = new("TextButton", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 36),
+    Text = "📦 Bring To: " .. bringTarget .. " ▾",
+    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = bringToBtn, CornerRadius = UDim.new(0, 10) })
+
+bringToList = new("Frame", {
+    Parent = mainGui,
+    Size = UDim2.new(0, 0, 0, 0),
+    Position = UDim2.new(0, 0, 0, 0),
+    BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 20
+})
+new("UICorner", { Parent = bringToList, CornerRadius = UDim.new(0, 10) })
+new("UIStroke", { Parent = bringToList, Color = Color3.fromRGB(138, 43, 226), Thickness = 2 })
+
+local bringToListLayout = new("UIListLayout", { Parent = bringToList, Padding = UDim.new(0, 6) })
+
+local function updateBringToListPosition()
+    local btnPos = bringToBtn.AbsolutePosition
+    local btnSize = bringToBtn.AbsoluteSize
+    -- Position relative to screen, not mainFrame
+    bringToList.Position = UDim2.new(0, btnPos.X, 0, btnPos.Y + btnSize.Y + 5)
+end
+
+local function populateBringToList()
+    for _, child in ipairs(bringToList:GetChildren()) do
+        if not child:IsA("UIListLayout") and not child:IsA("UICorner") and not child:IsA("UIStroke") then
+            child:Destroy()
+        end
+    end
+    
+    updatePlayerList()
+    local options = { "Me", "Void", "Campfire", "Scrapper" }
+    for _, playerName in ipairs(playerNames) do
+        table.insert(options, playerName)
+    end
+    
+    for _, opt in ipairs(options) do
+        local b = new("TextButton", {
+            Parent = bringToList,
+            Size = UDim2.new(0, bringToBtn.AbsoluteSize.X - 12, 0, 32),
+            Text = opt,
+            BackgroundColor3 = opt == bringTarget and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 65),
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = opt == bringTarget and Enum.Font.GothamBold or Enum.Font.Gotham,
+            TextSize = 13,
+            BorderSizePixel = 0,
+            ZIndex = 21
+        })
+        new("UICorner", { Parent = b, CornerRadius = UDim.new(0, 8) })
+        
+        b.MouseButton1Click:Connect(function()
+            bringTarget = opt
+            bringToBtn.Text = "📦 Bring To: " .. bringTarget .. " ▾"
+            bringToList.Visible = false
+            
+            local playerObj = Players:FindFirstChild(opt)
+            if playerObj and playerObj.Character and playerObj.Character:FindFirstChild("HumanoidRootPart") then
+                bringTargets[opt] = playerObj.Character.HumanoidRootPart.Position
+            end
+        end)
+    end
+    
+    local totalHeight = #options * 38 + 12
+    bringToList.Size = UDim2.new(0, bringToBtn.AbsoluteSize.X, 0, totalHeight)
+end
+
+bringToBtn.MouseButton1Click:Connect(function()
+    if bringToList.Visible then
+        bringToList.Visible = false
+    else
+        updateBringToListPosition()
+        populateBringToList()
+        bringToList.Visible = true
+        if filterList then filterList.Visible = false end
+        if speedList then speedList.Visible = false end
+    end
+end)
+
+-- Auto-follow: Update bringToList position when button moves/resizes
+bringToBtn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+    if bringToList.Visible then
+        updateBringToListPosition()
+    end
+end)
+
+bringToBtn:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+    if bringToList.Visible then
+        updateBringToListPosition()
+    end
+end)
+
+-- FILTER DROPDOWN
+local filterLabel = new("TextLabel", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 20),
+    BackgroundTransparency = 1,
+    Text = "📍 Select Filter:",
+    TextSize = 13,
+    TextColor3 = Color3.fromRGB(150, 150, 150),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 12
+})
+
+local filterBtn = new("TextButton", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 40),
+    Text = "🔍 " .. currentFilter .. " ▾",
+    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = filterBtn, CornerRadius = UDim.new(0, 10) })
+
+filterList = new("Frame", {
+    Parent = mainGui,
+    Size = UDim2.new(0, 0, 0, 0),
+    Position = UDim2.new(0, 0, 0, 0),
+    BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 20
+})
+new("UICorner", { Parent = filterList, CornerRadius = UDim.new(0, 10) })
+new("UIStroke", { Parent = filterList, Color = Color3.fromRGB(138, 43, 226), Thickness = 2 })
+
+filterSearchBox = new("TextBox", {
+    Parent = filterList,
+    Size = UDim2.new(1, -12, 0, 35),
+    Position = UDim2.new(0, 6, 0, 6),
+    BackgroundColor3 = Color3.fromRGB(50, 50, 55),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    PlaceholderText = "🔍 Search filters...",
+    PlaceholderColor3 = Color3.fromRGB(150, 150, 150),
+    Text = "",
+    TextSize = 13,
+    Font = Enum.Font.Gotham,
+    BorderSizePixel = 0,
+    ClearTextOnFocus = false,
+    ZIndex = 21
+})
+new("UICorner", { Parent = filterSearchBox, CornerRadius = UDim.new(0, 8) })
+
+local filterScrollFrame = new("ScrollingFrame", {
+    Parent = filterList,
+    Size = UDim2.new(1, -12, 1, -47),
+    Position = UDim2.new(0, 6, 0, 41),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 4,
+    ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226),
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    ZIndex = 21
+})
+
+local filterListLayout = new("UIListLayout", {
+    Parent = filterScrollFrame,
+    Padding = UDim.new(0, 6)
+})
+
+filterListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    filterScrollFrame.CanvasSize = UDim2.new(0, 0, 0, filterListLayout.AbsoluteContentSize.Y + 6)
+end)
+
+local allFilterOptions = {}
+
+local function populateFilterList(searchQuery)
+    for _, child in ipairs(filterScrollFrame:GetChildren()) do
+        if child ~= filterListLayout then child:Destroy() end
+    end
+    
+    if #allFilterOptions == 0 then allFilterOptions = collectFilterOptions() end
+    local query = (searchQuery or ""):lower()
+    local filteredOptions = {}
+    
+    for _, opt in ipairs(allFilterOptions) do
+        if query == "" or opt:lower():find(query, 1, true) then
+            table.insert(filteredOptions, opt)
+        end
+    end
+    
+    for _, opt in ipairs(filteredOptions) do
+        local isSelected = false
+        if multiItemMode then
+            for _, selectedItem in ipairs(selectedItems) do
+                if selectedItem == opt then
+                    isSelected = true
+                    break
+                end
+            end
+        end
+        
+        local btn = new("TextButton", {
+            Parent = filterScrollFrame,
+            Size = UDim2.new(1, -6, 0, 32),
+            Text = isSelected and ("✅ " .. opt) or opt,
+            BackgroundColor3 = (isSelected or (opt == currentFilter and not multiItemMode)) and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 65),
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = (isSelected or opt == currentFilter) and Enum.Font.GothamBold or Enum.Font.Gotham,
+            TextSize = 13,
+            BorderSizePixel = 0,
+            ZIndex = 22
+        })
+        new("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 8) })
+        
+        btn.MouseButton1Click:Connect(function()
+            if multiItemMode then
+                local found = false
+                for idx, selectedItem in ipairs(selectedItems) do
+                    if selectedItem == opt then
+                        table.remove(selectedItems, idx)
+                        found = true
+                        break
+                    end
+                end
+                
+                if not found then
+                    table.insert(selectedItems, opt)
+                end
+                
+                populateFilterList(filterSearchBox.Text)
+            else
+                currentFilter = opt
+                filterBtn.Text = "🔍 " .. opt .. " ▾"
+                filterList.Visible = false
+                filterSearchBox.Text = ""
+            end
+        end)
+    end
+    
+    local maxHeight = 250
+    local contentHeight = #filteredOptions * 38 + 47
+    local finalHeight = math.min(contentHeight, maxHeight)
+    filterList.Size = UDim2.new(0, filterBtn.AbsoluteSize.X, 0, finalHeight)
+end
+
+local function updateFilterListPosition()
+    local btnPos = filterBtn.AbsolutePosition
+    local btnSize = filterBtn.AbsoluteSize
+    -- Position relative to screen, not mainFrame
+    filterList.Position = UDim2.new(0, btnPos.X, 0, btnPos.Y + btnSize.Y + 5)
+end
+
+filterSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    populateFilterList(filterSearchBox.Text)
+end)
+
+filterBtn.MouseButton1Click:Connect(function()
+    if filterList.Visible then
+        filterList.Visible = false
+        filterSearchBox.Text = ""
+    else
+        updateFilterListPosition()
+        filterSearchBox.Text = ""
+        allFilterOptions = collectFilterOptions()
+        populateFilterList("")
+        filterList.Visible = true
+        if speedList then speedList.Visible = false end
+        if bringToList then bringToList.Visible = false end
+        task.wait(0.05)
+        filterSearchBox:CaptureFocus()
+    end
+end)
+
+-- Auto-follow: Update filterList position when button moves/resizes
+filterBtn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+    if filterList.Visible then
+        updateFilterListPosition()
+    end
+end)
+
+filterBtn:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+    if filterList.Visible then
+        updateFilterListPosition()
+    end
+end)
+
+-- SPEED DROPDOWN
+local speedLabel = new("TextLabel", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 20),
+    BackgroundTransparency = 1,
+    Text = "⚡ Select Speed:",
+    TextSize = 13,
+    TextColor3 = Color3.fromRGB(150, 150, 150),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 12
+})
+
+local speedBtn = new("TextButton", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 40),
+    Text = "⚡ " .. currentSpeed .. " ▾",
+    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = speedBtn, CornerRadius = UDim.new(0, 10) })
+
+speedList = new("Frame", {
+    Parent = mainGui,
+    Size = UDim2.new(0, 0, 0, 0),
+    Position = UDim2.new(0, 0, 0, 0),
+    BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 20
+})
+new("UICorner", { Parent = speedList, CornerRadius = UDim.new(0, 10) })
+new("UIStroke", { Parent = speedList, Color = Color3.fromRGB(138, 43, 226), Thickness = 2 })
+
+local speedListLayout = new("UIListLayout", { Parent = speedList, Padding = UDim.new(0, 6) })
+
+local speedOptions = { "UltraInstantly", "Instant", "Ultra Fast", "Fast", "Slow" }
+
+local function populateSpeedList()
+    for _, child in ipairs(speedList:GetChildren()) do
+        if child ~= speedListLayout and not child:IsA("UICorner") and not child:IsA("UIStroke") then
+            child:Destroy()
+        end
+    end
+    
+    for _, s in ipairs(speedOptions) do
+        local labelText = s
+        if s == "UltraInstantly" then labelText = "Ultra Instantly (No Wait)"
+        elseif s == "Instant" then labelText = "Instant (task.wait)"
+        elseif s == "Ultra Fast" then labelText = "Ultra Fast (0.05s)"
+        elseif s == "Fast" then labelText = "Fast (0.25s)"
+        elseif s == "Slow" then labelText = "Slow (0.6s)"
+        end
+        
+        local b = new("TextButton", {
+            Parent = speedList,
+            Size = UDim2.new(0, speedBtn.AbsoluteSize.X - 12, 0, 32),
+            Text = labelText,
+            BackgroundColor3 = s == currentSpeed and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 65),
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = s == currentSpeed and Enum.Font.GothamBold or Enum.Font.Gotham,
+            TextSize = 13,
+            BorderSizePixel = 0,
+            ZIndex = 21
+        })
+        new("UICorner", { Parent = b, CornerRadius = UDim.new(0, 8) })
+        
+        b.MouseButton1Click:Connect(function()
+            currentSpeed = s
+            currentDelay = SpeedMap[s]
+            speedBtn.Text = "⚡ " .. s .. " ▾"
+            speedList.Visible = false
+        end)
+    end
+    
+    local totalHeight = #speedOptions * 38 + 12
+    speedList.Size = UDim2.new(0, speedBtn.AbsoluteSize.X, 0, totalHeight)
+end
+
+local function updateSpeedListPosition()
+    local btnPos = speedBtn.AbsolutePosition
+    local btnSize = speedBtn.AbsoluteSize
+    -- Position relative to screen, not mainFrame
+    speedList.Position = UDim2.new(0, btnPos.X, 0, btnPos.Y + btnSize.Y + 5)
+end
+
+speedBtn.MouseButton1Click:Connect(function()
+    if speedList.Visible then
+        speedList.Visible = false
+    else
+        updateSpeedListPosition()
+        populateSpeedList()
+        speedList.Visible = true
+        if filterList then filterList.Visible = false end
+        if bringToList then bringToList.Visible = false end
+    end
+end)
+
+-- Auto-follow: Update speedList position when button moves/resizes
+speedBtn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+    if speedList.Visible then
+        updateSpeedListPosition()
+    end
+end)
+
+speedBtn:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+    if speedList.Visible then
+        updateSpeedListPosition()
+    end
+end)
+
+-- LIMIT CONTROLS
+local limitLabel = new("TextLabel", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 20),
+    BackgroundTransparency = 1,
+    Text = "📊 Bring Limit:",
+    TextSize = 13,
+    TextColor3 = Color3.fromRGB(150, 150, 150),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 12
+})
+
+local noLimitFrame = new("Frame", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(45, 45, 50),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = noLimitFrame, CornerRadius = UDim.new(0, 10) })
+
+local noLimitLabel = new("TextLabel", {
+    Parent = noLimitFrame,
+    Size = UDim2.new(0.7, 0, 1, 0),
+    Position = UDim2.new(0, 10, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "🔓 No Limit Mode",
+    TextSize = 14,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+local noLimitToggle = new("TextButton", {
+    Parent = noLimitFrame,
+    Size = UDim2.new(0, 60, 0, 28),
+    Position = UDim2.new(1, -70, 0.5, -14),
+    BackgroundColor3 = Color3.fromRGB(220, 80, 80),
+    Text = "OFF",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    ZIndex = 13
+})
+new("UICorner", { Parent = noLimitToggle, CornerRadius = UDim.new(0, 8) })
+
+local limitFrame = new("Frame", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(45, 45, 50),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = limitFrame, CornerRadius = UDim.new(0, 10) })
+
+local limitBox = new("TextBox", {
+    Parent = limitFrame,
+    Size = UDim2.new(0.8, 0, 1, 0),
+    Position = UDim2.new(0.1, 0, 0, 0),
+    Text = tostring(bringLimitDefault),
+    TextSize = 14,
+    BackgroundColor3 = Color3.fromRGB(60, 60, 65),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.Gotham,
+    BorderSizePixel = 0,
+    ClearTextOnFocus = false,
+    ZIndex = 13
+})
+new("UICorner", { Parent = limitBox, CornerRadius = UDim.new(0, 8) })
+
+noLimitToggle.MouseButton1Click:Connect(function()
+    noLimitEnabled = not noLimitEnabled
+    if noLimitEnabled then
+        previousLimit = tonumber(limitBox.Text) or bringLimitDefault
+        limitBox.Text = "Disabled"
+        limitBox.BackgroundColor3 = Color3.fromRGB(100, 100, 105)
+        noLimitToggle.Text = "ON"
+        noLimitToggle.BackgroundColor3 = Color3.fromRGB(88, 166, 88)
+    else
+        limitBox.Text = tostring(previousLimit)
+        limitBox.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+        noLimitToggle.Text = "OFF"
+        noLimitToggle.BackgroundColor3 = Color3.fromRGB(220, 80, 80)
+    end
+end)
+
+-- MULTI-ITEM TOGGLE
+local multiItemFrame = new("Frame", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(45, 45, 50),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = multiItemFrame, CornerRadius = UDim.new(0, 10) })
+
+local multiItemLabel = new("TextLabel", {
+    Parent = multiItemFrame,
+    Size = UDim2.new(0.7, 0, 1, 0),
+    Position = UDim2.new(0, 10, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "📦 Multi-Item Mode",
+    TextSize = 14,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+local multiItemToggle = new("TextButton", {
+    Parent = multiItemFrame,
+    Size = UDim2.new(0, 60, 0, 28),
+    Position = UDim2.new(1, -70, 0.5, -14),
+    BackgroundColor3 = Color3.fromRGB(220, 80, 80),
+    Text = "OFF",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    ZIndex = 13
+})
+new("UICorner", { Parent = multiItemToggle, CornerRadius = UDim.new(0, 8) })
+
+multiItemToggle.MouseButton1Click:Connect(function()
+    multiItemMode = not multiItemMode
+    if multiItemMode then
+        multiItemToggle.Text = "ON"
+        multiItemToggle.BackgroundColor3 = Color3.fromRGB(88, 166, 88)
+        selectedItems = {}
+    else
+        multiItemToggle.Text = "OFF"
+        multiItemToggle.BackgroundColor3 = Color3.fromRGB(220, 80, 80)
+        selectedItems = {}
+    end
+end)
+
+-- BRING ITEM PRIVATE TOGGLE
+local privateFrame = new("Frame", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(45, 45, 50),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = privateFrame, CornerRadius = UDim.new(0, 10) })
+
+local privateLabel = new("TextLabel", {
+    Parent = privateFrame,
+    Size = UDim2.new(0.7, 0, 1, 0),
+    Position = UDim2.new(0, 10, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "🎯 Bring Item Private",
+    TextSize = 14,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+local privateToggle = new("TextButton", {
+    Parent = privateFrame,
+    Size = UDim2.new(0, 60, 0, 28),
+    Position = UDim2.new(1, -70, 0.5, -14),
+    BackgroundColor3 = Color3.fromRGB(220, 80, 80),
+    Text = "OFF",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    ZIndex = 13
+})
+new("UICorner", { Parent = privateToggle, CornerRadius = UDim.new(0, 8) })
+
+privateToggle.MouseButton1Click:Connect(function()
+    bringItemPrivate = not bringItemPrivate
+    if bringItemPrivate then
+        privateToggle.Text = "ON"
+        privateToggle.BackgroundColor3 = Color3.fromRGB(88, 166, 88)
+    else
+        privateToggle.Text = "OFF"
+        privateToggle.BackgroundColor3 = Color3.fromRGB(220, 80, 80)
+    end
+end)
+
+-- BATCH SIZE
+local batchLabel = new("TextLabel", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 20),
+    BackgroundTransparency = 1,
+    Text = "📦 Batch Size: " .. batchSize,
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(200, 200, 200),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 12
+})
+
+local batchExampleLabel = new("TextLabel", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 30),
+    BackgroundTransparency = 1,
+    Text = "📝 Example: Set to 5 = Bring 5 items at once (not one by one)",
+    TextSize = 10,
+    TextColor3 = Color3.fromRGB(150, 150, 150),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextWrapped = true,
+    ZIndex = 12
+})
+
+local batchBox = new("TextBox", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 32),
+    BackgroundColor3 = Color3.fromRGB(50, 50, 55),
+    Text = tostring(batchSize),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.Gotham,
+    TextSize = 12,
+    BorderSizePixel = 0,
+    ClearTextOnFocus = false,
+    ZIndex = 12
+})
+new("UICorner", { Parent = batchBox, CornerRadius = UDim.new(0, 8) })
+
+batchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local num = tonumber(batchBox.Text)
+    if num and num > 0 then
+        batchSize = num
+        batchLabel.Text = "📦 Batch Size: " .. batchSize
+    end
+end)
+
+-- OPEN ALL CHESTS BUTTON
+local openChestsBtn = new("TextButton", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 45),
+    BackgroundColor3 = Color3.fromRGB(88, 120, 200),
+    Text = "🗝️ OPEN ALL CHESTS",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = openChestsBtn, CornerRadius = UDim.new(0, 10) })
+new("UIStroke", { Parent = openChestsBtn, Color = Color3.fromRGB(60, 80, 160), Thickness = 2 })
+
+openChestsBtn.MouseButton1Click:Connect(function()
+    local folder = getItemsFolder()
+    if not folder then return end
+    
+    local opened = 0
+    for _, item in ipairs(folder:GetDescendants()) do
+        if item:IsA("Model") then
+            local lname = tostring(item.Name or ""):lower()
+            if lname:find("chest", 1, true) or lname:find("crate", 1, true) then
+                local prox = item:FindFirstChild("Main")
+                if prox then prox = prox:FindFirstChild("ProximityAttachment") end
+                if prox then prox = prox:FindFirstChild("ProximityInteraction") end
+                
+                if prox and prox:IsA("ProximityPrompt") then
+                    pcall(function()
+                        fireproximityprompt(prox)
+                    end)
+                    opened = opened + 1
+                end
+            end
+        end
+    end
+    print("🗝️ Opened " .. opened .. " chests/crates!")
+end)
+
+-- BRING ITEMS BUTTON
+local bringBtn = new("TextButton", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 45),
+    BackgroundColor3 = Color3.fromRGB(88, 166, 88),
+    Text = "✨ BRING ITEMS",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = bringBtn, CornerRadius = UDim.new(0, 10) })
+new("UIStroke", { Parent = bringBtn, Color = Color3.fromRGB(60, 120, 60), Thickness = 2 })
+
+-- STOP BRING BUTTON
+local stopBringBtn = new("TextButton", {
+    Parent = tab1,
+    Size = UDim2.new(1, 0, 0, 45),
+    BackgroundColor3 = Color3.fromRGB(220, 80, 80),
+    Text = "🛑 STOP BRING",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = stopBringBtn, CornerRadius = UDim.new(0, 10) })
+new("UIStroke", { Parent = stopBringBtn, Color = Color3.fromRGB(180, 60, 60), Thickness = 2 })
+
+stopBringBtn.MouseButton1Click:Connect(function()
+    isBringing = false
+    print("🛑 STOP: Bring operation stopped!")
+end)
+
+bringBtn.MouseButton1Click:Connect(function()
+    if isBringing then
+        print("⚠️ Already bringing items!")
+        return
+    end
+    
+    isBringing = true
+    print("✨ Bring operation started! (ULTRA INSTANT - Heartbeat)")
+    
+    task.spawn(function()
+        local hrp = getHrp()
+        if not hrp then
+            print("❌ HRP not found")
+            isBringing = false
+            return
+        end
+        
+        local folder = getItemsFolder()
+        if not folder then
+            print("❌ Items folder not found")
+            isBringing = false
+            return
+        end
+        
+        local remote = getDragRemote()
+        local pool = {}
+        
+        -- BUILD POOL
+        if multiItemMode and #selectedItems > 0 then
+            print("📦 Multi-Item Mode: " .. table.concat(selectedItems, ", "))
+            for _, selectedName in ipairs(selectedItems) do
+                if not isBringing then break end
+                for _, item in ipairs(folder:GetChildren()) do
+                    if item:IsA("Model") and item.Name == selectedName and ensurePrimary(item) then
+                        table.insert(pool, item)
+                    end
+                end
+            end
+        else
+            local matcher = buildMatcher()
+            for _, item in ipairs(folder:GetChildren()) do
+                if not isBringing then break end
+                if item:IsA("Model") and ensurePrimary(item) and matcher(item.Name) then
+                    table.insert(pool, item)
+                end
+            end
+        end
+        
+        if not isBringing then
+            isBringing = false
+            return
+        end
+        
+        local limit = noLimitEnabled and math.huge or (tonumber(limitBox.Text) or bringLimitDefault)
+        
+        print("🚀 Pool: " .. #pool .. " | Batch: " .. batchSize .. " | Limit: " .. (limit == math.huge and "∞" or limit))
+        
+        -- Determine target
+        local targetCFrame
+        if bringTarget == "Me" then
+            targetCFrame = hrp.CFrame
+        else
+            local v = bringTargets[bringTarget]
+            targetCFrame = v and CFrame.new(v) or hrp.CFrame
+        end
+        
+        -- Process batches with ULTRA FAST Heartbeat waiting
+        local totalBrought = 0
+        local batchCount = 0
+        
+        for i = 1, #pool, batchSize do
+            if not isBringing then break end
+            
+            batchCount = batchCount + 1
+            local batchItems = {}
+            
+            for j = i, math.min(i + batchSize - 1, #pool) do
+                if not isBringing or totalBrought >= limit then break end
+                table.insert(batchItems, pool[j])
+                totalBrought = totalBrought + 1
+            end
+            
+            if #batchItems == 0 then break end
+            
+            -- Teleport items
+            for _, item in ipairs(batchItems) do
+                if not isBringing then break end
+                pcall(function()
+                    item:SetPrimaryPartCFrame(targetCFrame)
+                end)
+            end
+            
+            if not isBringing then break end
+            
+            -- Start Grab
+            if remote then
+                for _, item in ipairs(batchItems) do
+                    if not isBringing then break end
+                    pcall(function() remote:FireServer(item) end)
+                end
+                
+                if not isBringing then break end
+                
+                -- Stop Grab (if not private) - HEARTBEAT WAIT
+                if not bringItemPrivate then
+                    -- Wait 3 frames using Heartbeat (ULTRA FAST)
+                    local frameCount = 0
+                    local waitConnection
+                    waitConnection = RunService.Heartbeat:Connect(function()
+                        frameCount = frameCount + 1
+                        if frameCount >= 3 then
+                            waitConnection:Disconnect()
+                        end
+                    end)
+                    
+                    -- Wait for frames to complete
+                    while frameCount < 3 do
+                        RunService.Heartbeat:Wait()
+                    end
+                    
+                    local stopRemote = ReplicatedStorage:FindFirstChild("RemoteEvents")
+                    if stopRemote then
+                        stopRemote = stopRemote:FindFirstChild("RequestStopDraggingItem")
+                    end
+                    
+                    if stopRemote then
+                        for _, item in ipairs(batchItems) do
+                            if not isBringing then break end
+                            pcall(function() stopRemote:FireServer(item) end)
+                        end
+                    end
+                end
+            end
+            
+            if not isBringing then break end
+            
+            print("✅ Batch " .. batchCount .. " complete! (" .. #batchItems .. " items)")
+            
+            -- Wait between batches - HEARTBEAT MODE (Every 60 frames)
+            if currentDelay == -1 then
+                -- No wait - instant
+            elseif currentDelay and currentDelay > 0 then
+                -- Use Heartbeat for precise frame-based waiting
+                local frameTarget = math.floor(currentDelay * 60) -- Convert seconds to frames
+                local frameCount = 0
+                local waitConnection
+                waitConnection = RunService.Heartbeat:Connect(function()
+                    frameCount = frameCount + 1
+                    if frameCount >= frameTarget then
+                        waitConnection:Disconnect()
+                    end
+                end)
+                
+                while frameCount < frameTarget and isBringing do
+                    RunService.Heartbeat:Wait()
+                end
+                
+                if waitConnection then waitConnection:Disconnect() end
+            else
+                -- Default: Wait 60 frames (1 second at 60 FPS)
+                local frameCount = 0
+                local waitConnection
+                waitConnection = RunService.Heartbeat:Connect(function()
+                    frameCount = frameCount + 1
+                    if frameCount >= 60 then
+                        waitConnection:Disconnect()
+                    end
+                end)
+                
+                while frameCount < 60 and isBringing do
+                    RunService.Heartbeat:Wait()
+                end
+                
+                if waitConnection then waitConnection:Disconnect() end
+            end
+            
+            if totalBrought >= limit then break end
+        end
+        
+        if isBringing then
+            print("✨ BRING COMPLETE! " .. totalBrought .. " items in " .. batchCount .. " batches (ULTRA INSTANT)")
+        end
+        
+        isBringing = false
+    end)
+end)
+
+updateCountLabel()
+
+-- ════════════════════════════════════════════════════════════
+updateLoading(0.7, "Loading Automatic features...")
+
+-- TAB 2: AUTOMATIC
+-- ════════════════════════════════════════════════════════════
+
+local function createToggle(parent, text, callback)
+    local toggleFrame = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 45),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+        BorderSizePixel = 0,
+        ZIndex = 12
+    })
+    new("UICorner", { Parent = toggleFrame, CornerRadius = UDim.new(0, 8) })
+    
+    local toggleLabel = new("TextLabel", {
+        Parent = toggleFrame,
+        Size = UDim2.new(1, -70, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextSize = 14,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 13
+    })
+    
+    local toggleBtn = new("TextButton", {
+        Parent = toggleFrame,
+        Size = UDim2.fromOffset(50, 30),
+        Position = UDim2.new(1, -60, 0.5, -15),
+        BackgroundColor3 = Color3.fromRGB(220, 53, 69),
+        Text = "OFF",
+        TextSize = 12,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = toggleBtn, CornerRadius = UDim.new(0, 6) })
+    
+    local enabled = false
+    toggleBtn.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        toggleBtn.Text = enabled and "ON" or "OFF"
+        toggleBtn.BackgroundColor3 = enabled and Color3.fromRGB(40, 167, 69) or Color3.fromRGB(220, 53, 69)
+        if callback then callback(enabled) end
+    end)
+    
+    return toggleBtn
+end
+
+local function createSection(parent, title)
+    local section = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 35),
+        BackgroundColor3 = Color3.fromRGB(40, 40, 50),
+        BorderSizePixel = 0,
+        ZIndex = 12
+    })
+    new("UICorner", { Parent = section, CornerRadius = UDim.new(0, 8) })
+    
+    local label = new("TextLabel", {
+        Parent = section,
+        Size = UDim2.new(1, -20, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
+        BackgroundTransparency = 1,
+        Text = title,
+        TextSize = 16,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 13
+    })
+    
+    return section
+end
+
+local function createTextBox(parent, labelText, placeholder)
+    local textBoxFrame = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 45),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+        BorderSizePixel = 0,
+        ZIndex = 12
+    })
+    new("UICorner", { Parent = textBoxFrame, CornerRadius = UDim.new(0, 8) })
+    
+    local textBoxLabel = new("TextLabel", {
+        Parent = textBoxFrame,
+        Size = UDim2.new(0.5, -10, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
+        BackgroundTransparency = 1,
+        Text = labelText,
+        TextSize = 14,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 13
+    })
+    
+    local textBox = new("TextBox", {
+        Parent = textBoxFrame,
+        Size = UDim2.new(0.5, -20, 0, 30),
+        Position = UDim2.new(0.5, 10, 0.5, -15),
+        BackgroundColor3 = Color3.fromRGB(50, 50, 60),
+        Text = "",
+        PlaceholderText = placeholder,
+        TextSize = 13,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        ClearTextOnFocus = false,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = textBox, CornerRadius = UDim.new(0, 6) })
+    
+    return textBox
+end
+
+local function createButton(parent, text, color, callback)
+    local button = new("TextButton", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 45),
+        BackgroundColor3 = color or Color3.fromRGB(138, 43, 226),
+        Text = text,
+        TextSize = 16,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = button, CornerRadius = UDim.new(0, 8) })
+    
+    if callback then
+        button.MouseButton1Click:Connect(callback)
+    end
+    
+    return button
+end
+
+createSection(tab2, "🌱 Advanced Sapling Placer")
+
+-- Sapling Placer Variables
+local saplingPattern = savedSettings.saplingPattern
+local saplingCount = savedSettings.saplingCount
+local saplingRadius = savedSettings.saplingRadius
+local blueprintEnabled = false
+local blueprintParts = {}
+local centerPosition = savedSettings.centerPosition
+local campfirePos = Vector3.new(1.221, 4.000, 0.894)
+
+-- Center Position Dropdown
+local centerFrame = new("Frame", {
+    Parent = tab2,
+    Size = UDim2.new(1, 0, 0, 45),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = centerFrame, CornerRadius = UDim.new(0, 8) })
+
+local centerLabel = new("TextLabel", {
+    Parent = centerFrame,
+    Size = UDim2.new(0.4, -10, 1, 0),
+    Position = UDim2.fromOffset(10, 0),
+    BackgroundTransparency = 1,
+    Text = "📍 Center:",
+    TextSize = 14,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+-- Center Buttons Container
+local centerBtnContainer = new("Frame", {
+    Parent = centerFrame,
+    Size = UDim2.new(0.6, -10, 0, 35),
+    Position = UDim2.new(0.4, 5, 0.5, -17.5),
+    BackgroundTransparency = 1,
+    ZIndex = 13
+})
+
+local centers = {"Me", "Campfire"}
+local centerButtons = {}
+
+for i, center in ipairs(centers) do
+    local btn = new("TextButton", {
+        Parent = centerBtnContainer,
+        Size = UDim2.new(1/2, -3, 1, 0),
+        Position = UDim2.new((i-1)/2, 2, 0, 0),
+        BackgroundColor3 = center == centerPosition and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70),
+        Text = center,
+        TextSize = 12,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        ZIndex = 14
+    })
+    new("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 5) })
+    
+    centerButtons[center] = btn
+    
+    btn.MouseButton1Click:Connect(function()
+        centerPosition = center
+        savedSettings.centerPosition = center
+        saveSettings()
+        for name, button in pairs(centerButtons) do
+            button.BackgroundColor3 = name == center and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
+        end
+        print("📍 Center changed to: " .. center .. " (Saved!)")
+        -- Live update blueprint
+        if blueprintEnabled then
+            updateBlueprint()
+        end
+    end)
+end
+
+-- Pattern Dropdown
+local patternFrame = new("Frame", {
+    Parent = tab2,
+    Size = UDim2.new(1, 0, 0, 75),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = patternFrame, CornerRadius = UDim.new(0, 8) })
+
+new("TextLabel", {
+    Parent = patternFrame,
+    Size = UDim2.new(1, -10, 0, 22),
+    Position = UDim2.fromOffset(10, 5),
+    BackgroundTransparency = 1,
+    Text = "🔷 Pattern: (scroll left/right ➡️)",
+    TextSize = 13,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+-- Scrollable Pattern Button Row
+local patternScroll = new("ScrollingFrame", {
+    Parent = patternFrame,
+    Size = UDim2.new(1, -10, 0, 40),
+    Position = UDim2.fromOffset(5, 30),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 6,
+    ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226),
+    ScrollingDirection = Enum.ScrollingDirection.X,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    ScrollingEnabled = true,
+    Active = true,
+    ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
+    ZIndex = 13
+})
+
+local patternListLayout = new("UIListLayout", {
+    Parent = patternScroll,
+    FillDirection = Enum.FillDirection.Horizontal,
+    Padding = UDim.new(0, 5),
+    SortOrder = Enum.SortOrder.LayoutOrder
+})
+
+-- ALL PATTERNS (13 total!)
+local patterns = {
+    "Me", "Circle", "Square", "Grid", "Spiral",
+    "Star", "Random", "Ring", "Cross", "Diamond",
+    "Wave", "Triangle", "Zigzag"
+}
+local patternButtons = {}
+
+for i, pattern in ipairs(patterns) do
+    local btn = new("TextButton", {
+        Parent = patternScroll,
+        Size = UDim2.new(0, 70, 1, -4),
+        BackgroundColor3 = pattern == saplingPattern and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70),
+        Text = pattern,
+        TextSize = 11,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        LayoutOrder = i,
+        AutoButtonColor = false,
+        ZIndex = 14
+    })
+    new("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 5) })
+    patternButtons[pattern] = btn
+
+    btn.MouseButton1Click:Connect(function()
+        saplingPattern = pattern
+        savedSettings.saplingPattern = pattern
+        saveSettings()
+        for name, button in pairs(patternButtons) do
+            button.BackgroundColor3 = name == pattern and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
+        end
+        print("🔷 Pattern: " .. pattern)
+        if blueprintEnabled then updateBlueprint() end
+    end)
+end
+
+-- Auto-size canvas with extra padding for easier scrolling
+patternListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    patternScroll.CanvasSize = UDim2.new(0, patternListLayout.AbsoluteContentSize.X + 20, 0, 0)
+end)
+
+-- Pattern Generation Function (MUST BE BEFORE BLUEPRINT TOGGLE!)
+local function generatePattern(pattern, count, radius, center)
+    local positions = {}
+    
+    if pattern == "Me" then
+        -- Place all saplings at player position
+        for i = 1, count do
+            table.insert(positions, Vector3.new(center.X, center.Y, center.Z))
+        end
+    elseif pattern == "Circle" then
+        for i = 1, count do
+            local angle = (i / count) * math.pi * 2
+            local x = center.X + math.cos(angle) * radius
+            local z = center.Z + math.sin(angle) * radius
+            table.insert(positions, Vector3.new(x, center.Y, z))
+        end
+    elseif pattern == "Square" then
+        local perSide = math.ceil(count / 4)
+        local side = radius * 2
+        for i = 1, count do
+            local progress = (i - 1) / count
+            local x, z
+            if progress < 0.25 then
+                x = center.X - radius + (progress * 4) * side
+                z = center.Z - radius
+            elseif progress < 0.5 then
+                x = center.X + radius
+                z = center.Z - radius + ((progress - 0.25) * 4) * side
+            elseif progress < 0.75 then
+                x = center.X + radius - ((progress - 0.5) * 4) * side
+                z = center.Z + radius
+            else
+                x = center.X - radius
+                z = center.Z + radius - ((progress - 0.75) * 4) * side
+            end
+            table.insert(positions, Vector3.new(x, center.Y, z))
+        end
+    elseif pattern == "Grid" then
+        local gridSize = math.ceil(math.sqrt(count))
+        local spacing = (radius * 2) / gridSize
+        for i = 1, count do
+            local row = math.floor((i - 1) / gridSize)
+            local col = (i - 1) % gridSize
+            local x = center.X - radius + col * spacing
+            local z = center.Z - radius + row * spacing
+            table.insert(positions, Vector3.new(x, center.Y, z))
+        end
+    elseif pattern == "Spiral" then
+        for i = 1, count do
+            local angle = i * 0.5
+            local distance = (i / count) * radius
+            local x = center.X + math.cos(angle) * distance
+            local z = center.Z + math.sin(angle) * distance
+            table.insert(positions, Vector3.new(x, center.Y, z))
+        end
+    elseif pattern == "Star" then
+        -- True 5-pointed star: 10 vertices alternating outer/inner, saplings along edges
+        local outerR = radius
+        local innerR = radius * 0.382  -- golden ratio inner radius for a perfect star
+        local numPoints = 5
+        local vertices = {}
+        for v = 0, numPoints * 2 - 1 do
+            local a = (v / (numPoints * 2)) * math.pi * 2 - math.pi / 2
+            local r = (v % 2 == 0) and outerR or innerR
+            table.insert(vertices, {x = center.X + math.cos(a) * r, z = center.Z + math.sin(a) * r})
+        end
+        -- Distribute saplings evenly along the 10 star edges
+        local numEdges = numPoints * 2
+        local perEdge = math.max(1, math.floor(count / numEdges))
+        local placed = 0
+        for e = 1, numEdges do
+            local va = vertices[e]
+            local vb = vertices[(e % numEdges) + 1]
+            local edgeCount = (e == numEdges) and (count - placed) or perEdge
+            for j = 0, edgeCount - 1 do
+                local t = j / math.max(edgeCount, 1)
+                table.insert(positions, Vector3.new(
+                    va.x + (vb.x - va.x) * t,
+                    center.Y,
+                    va.z + (vb.z - va.z) * t
+                ))
+                placed = placed + 1
+            end
+        end
+    elseif pattern == "Random" then
+        for i = 1, count do
+            local randomAngle = math.random() * math.pi * 2
+            local randomDistance = math.random() * radius
+            local x = center.X + math.cos(randomAngle) * randomDistance
+            local z = center.Z + math.sin(randomAngle) * randomDistance
+            table.insert(positions, Vector3.new(x, center.Y, z))
+        end
+    elseif pattern == "Ring" then
+        -- True double ring: outer ring + inner ring (two concentric circles)
+        local outerCount = math.ceil(count * 0.6)   -- 60% on outer ring
+        local innerCount = count - outerCount        -- 40% on inner ring
+        for i = 1, outerCount do
+            local angle = ((i - 1) / outerCount) * math.pi * 2
+            table.insert(positions, Vector3.new(
+                center.X + math.cos(angle) * radius,
+                center.Y,
+                center.Z + math.sin(angle) * radius
+            ))
+        end
+        for i = 1, innerCount do
+            local angle = ((i - 1) / innerCount) * math.pi * 2
+            table.insert(positions, Vector3.new(
+                center.X + math.cos(angle) * (radius * 0.5),
+                center.Y,
+                center.Z + math.sin(angle) * (radius * 0.5)
+            ))
+        end
+    elseif pattern == "Cross" then
+        local perArm = math.floor(count / 4)
+        local spacing = radius / math.max(perArm, 1)
+        for i = 1, perArm do
+            table.insert(positions, Vector3.new(center.X + i*spacing, center.Y, center.Z))
+            table.insert(positions, Vector3.new(center.X - i*spacing, center.Y, center.Z))
+            table.insert(positions, Vector3.new(center.X, center.Y, center.Z + i*spacing))
+            table.insert(positions, Vector3.new(center.X, center.Y, center.Z - i*spacing))
+        end
+    elseif pattern == "Diamond" then
+        -- Brilliant-cut diamond viewed from above:
+        -- 1. Outer girdle (circle)
+        -- 2. Inner table (octagon)
+        -- 3. 8 radial facet lines from table to girdle
+        -- 4. Centre point
+        local numFacets = 8
+        local tableR    = radius * 0.38   -- table octagon radius
+        local girdle    = radius           -- outer edge
+
+        -- Budget split: 35% girdle, 25% table, 30% facet lines, 10% centre star
+        local girdleCount  = math.floor(count * 0.35)
+        local tableCount   = math.floor(count * 0.25)
+        local facetCount   = math.floor(count * 0.30)
+        local starCount    = count - girdleCount - tableCount - facetCount
+
+        -- 1. Outer girdle ring
+        for i = 1, girdleCount do
+            local a = ((i - 1) / girdleCount) * math.pi * 2
+            table.insert(positions, Vector3.new(
+                center.X + math.cos(a) * girdle, center.Y,
+                center.Z + math.sin(a) * girdle))
+        end
+
+        -- 2. Inner table (octagon)
+        for i = 1, tableCount do
+            local a = ((i - 1) / tableCount) * math.pi * 2
+            -- snap angle to nearest octagon vertex for a clean faceted edge
+            local snap = math.floor(a / (math.pi / 4) + 0.5) * (math.pi / 4)
+            local blend = 0.5   -- 0=pure octagon edge, 1=pure circle
+            local ax = math.cos(a) * (1 - blend) + math.cos(snap) * blend
+            local az = math.sin(a) * (1 - blend) + math.sin(snap) * blend
+            local len = math.sqrt(ax * ax + az * az)
+            table.insert(positions, Vector3.new(
+                center.X + (ax / len) * tableR, center.Y,
+                center.Z + (az / len) * tableR))
+        end
+
+        -- 3. Eight radial facet lines (table → girdle)
+        local perLine = math.max(2, math.floor(facetCount / numFacets))
+        local fPlaced = 0
+        for f = 0, numFacets - 1 do
+            local a = (f / numFacets) * math.pi * 2 + math.pi / numFacets
+            local lineCount = (f == numFacets - 1) and (facetCount - fPlaced) or perLine
+            for j = 0, lineCount - 1 do
+                local t = tableR + (girdle - tableR) * (j / math.max(lineCount - 1, 1))
+                table.insert(positions, Vector3.new(
+                    center.X + math.cos(a) * t, center.Y,
+                    center.Z + math.sin(a) * t))
+                fPlaced = fPlaced + 1
+            end
+        end
+
+        -- 4. Centre star (8 short spokes from origin outward, very short)
+        local starR = tableR * 0.5
+        for i = 1, starCount do
+            local a = ((i - 1) / starCount) * math.pi * 2
+            local t  = (i % 3 == 0) and starR or starR * 0.45
+            table.insert(positions, Vector3.new(
+                center.X + math.cos(a) * t, center.Y,
+                center.Z + math.sin(a) * t))
+        end
+    elseif pattern == "Wave" then
+        local spacing = (radius * 2) / count
+        for i = 1, count do
+            local x = center.X - radius + (i-1) * spacing
+            local z = center.Z + math.sin(i * 0.5) * (radius * 0.5)
+            table.insert(positions, Vector3.new(x, center.Y, z))
+        end
+    elseif pattern == "Triangle" then
+        local perSide = math.ceil(count / 3)
+        local pts = {
+            Vector3.new(center.X, center.Y, center.Z - radius),
+            Vector3.new(center.X + radius*0.866, center.Y, center.Z + radius*0.5),
+            Vector3.new(center.X - radius*0.866, center.Y, center.Z + radius*0.5)
+        }
+        for s = 1, 3 do
+            local a, b = pts[s], pts[s%3+1]
+            for j = 0, perSide-1 do
+                local t = j / perSide
+                table.insert(positions, Vector3.new(a.X+(b.X-a.X)*t, center.Y, a.Z+(b.Z-a.Z)*t))
+            end
+        end
+    elseif pattern == "Zigzag" then
+        local spacing = (radius * 2) / count
+        for i = 1, count do
+            local x = center.X - radius + (i-1) * spacing
+            local z = center.Z + ((i%2==0) and (radius*0.4) or -(radius*0.4))
+            table.insert(positions, Vector3.new(x, center.Y, z))
+        end
+    end
+    
+    return positions
+end
+
+-- Update Blueprint Function
+local function updateBlueprint()
+    if not blueprintEnabled then return end
+    
+    -- Get center position based on setting
+    local center
+    if centerPosition == "Campfire" then
+        center = campfirePos
+    else
+        local hrp = getHrp()
+        if not hrp then return end
+        center = hrp.Position
+    end
+    
+    local positions = generatePattern(saplingPattern, saplingCount, saplingRadius, center)
+    
+    -- If we need more parts, create them
+    while #blueprintParts < #positions do
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(3, 0.5, 3)
+        part.Anchored = true
+        part.CanCollide = false
+        part.Transparency = 0.5
+        part.Color = Color3.fromRGB(0, 255, 0)
+        part.Material = Enum.Material.Neon
+        part.Parent = workspace
+        table.insert(blueprintParts, part)
+    end
+    
+    -- If we have too many parts, remove extras
+    while #blueprintParts > #positions do
+        local part = table.remove(blueprintParts)
+        if part and part.Parent then
+            part:Destroy()
+        end
+    end
+    
+    -- Update positions of existing parts
+    for i, pos in ipairs(positions) do
+        if blueprintParts[i] then
+            blueprintParts[i].Position = pos
+        end
+    end
+end
+
+-- Sapling Count Textbox
+local countBox = createTextBox(tab2, "🔢 Sapling Count:", "100")
+countBox.Text = tostring(savedSettings.saplingCount)
+countBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local value = tonumber(countBox.Text)
+    if value and value > 0 then
+        saplingCount = math.clamp(value, 1, 1000)
+        savedSettings.saplingCount = saplingCount
+        saveSettings()
+        -- Live update blueprint
+        if blueprintEnabled then
+            updateBlueprint()
+        end
+    end
+end)
+
+-- Radius Textbox
+local radiusBox = createTextBox(tab2, "📏 Radius:", "150")
+radiusBox.Text = tostring(savedSettings.saplingRadius)
+radiusBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local value = tonumber(radiusBox.Text)
+    if value and value > 0 then
+        saplingRadius = value -- No limit! Use any radius
+        savedSettings.saplingRadius = saplingRadius
+        saveSettings()
+        -- Live update blueprint
+        if blueprintEnabled then
+            updateBlueprint()
+        end
+    end
+end)
+
+-- Blueprint Toggle
+createToggle(tab2, "👁️ Blueprint View (Preview)", function(enabled)
+    blueprintEnabled = enabled
+    
+    if enabled then
+        updateBlueprint()
+        print("👁️ Blueprint View: ON - Will update live as you move!")
+    else
+        -- Clear blueprints
+        for _, part in ipairs(blueprintParts) do
+            if part and part.Parent then
+                part:Destroy()
+            end
+        end
+        blueprintParts = {}
+        print("👁️ Blueprint View: OFF")
+    end
+end)
+
+-- Live Blueprint Update Loop (Heartbeat)
+RunService.Heartbeat:Connect(function()
+    if blueprintEnabled then
+        task.wait(0.1) -- Update 10 times per second for ALL centers
+        updateBlueprint()
+    end
+end)
+
+-- Dupe Sapling (TRUE DUPE!)
+new("TextLabel", {
+    Parent = tab2,
+    Size = UDim2.new(1, 0, 0, 60),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    TextWrapped = true,
+    TextYAlignment = Enum.TextYAlignment.Top,
+    Text = [[📝 Note: Finds FIRST sapling, places it at YOUR position, then DUPES the rest using Pattern/Count/Radius/Center!]],
+    TextSize = 11,
+    TextColor3 = Color3.fromRGB(200, 200, 200),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+do
+    local note = tab2:GetChildren()[#tab2:GetChildren()]
+    new("UICorner", { Parent = note, CornerRadius = UDim.new(0, 8) })
+    new("UIPadding", { Parent = note, PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+end
+
+savedSettings.dupeButton = createButton(tab2, "♻️ Dupe Sapling", Color3.fromRGB(138, 43, 226), function()
+    print("♻️ Finding first sapling in workspace...")
+    
+    local plantRemote = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    if plantRemote then
+        plantRemote = plantRemote:FindFirstChild("RequestPlantItem")
+    end
+    
+    if not plantRemote then
+        print("❌ Plant remote not found!")
+        return
+    end
+    
+    -- Get center position
+    local center
+    if centerPosition == "Campfire" then
+        center = campfirePos
+    else
+        local hrp = getHrp()
+        if not hrp then
+            print("❌ Player not found!")
+            return
+        end
+        center = hrp.Position
+    end
+    
+    -- Find Items folder
+    local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("Item") or workspace:FindFirstChild("items")
+    
+    if not itemsFolder then
+        print("❌ No Items folder found in workspace!")
+        savedSettings.dupeButton.Text = "❌ No Saplings In Workspace!"
+        task.wait(2)
+        savedSettings.dupeButton.Text = "♻️ Dupe Sapling"
+        return
+    end
+    
+    -- Find FIRST sapling ONLY
+    local sapling = nil
+    local saplingOwnPos = nil
+    
+    for _, obj in ipairs(itemsFolder:GetChildren()) do
+        if obj.Name == "Sapling" and obj:IsA("Model") then
+            sapling = obj
+            -- Get sapling's OWN position!
+            if obj.PrimaryPart then
+                saplingOwnPos = obj.PrimaryPart.Position
+            elseif obj:FindFirstChildWhichIsA("BasePart") then
+                saplingOwnPos = obj:FindFirstChildWhichIsA("BasePart").Position
+            end
+            break  -- Stop after finding first one!
+        end
+    end
+    
+    -- If not found, check Sapling folder
+    if not sapling then
+        local saplingFolder = itemsFolder:FindFirstChild("Sapling")
+        if saplingFolder then
+            for _, obj in ipairs(saplingFolder:GetChildren()) do
+                if obj:IsA("Model") then
+                    sapling = obj
+                    if obj.PrimaryPart then
+                        saplingOwnPos = obj.PrimaryPart.Position
+                    elseif obj:FindFirstChildWhichIsA("BasePart") then
+                        saplingOwnPos = obj:FindFirstChildWhichIsA("BasePart").Position
+                    end
+                    break  -- Stop after finding first one!
+                end
+            end
+        end
+    end
+    
+    -- If no sapling found
+    if not sapling then
+        print("❌ No sapling found in workspace!")
+        savedSettings.dupeButton.Text = "❌ No Saplings In Workspace!"
+        task.wait(2)
+        savedSettings.dupeButton.Text = "♻️ Dupe Sapling"
+        return
+    end
+    
+    print("✅ Found first sapling at its own pos! Duping " .. saplingCount .. " times with pattern " .. saplingPattern .. "...")
+    
+    -- Generate positions using pattern/count/radius/center
+    local positions = generatePattern(saplingPattern, saplingCount, saplingRadius, center)
+    
+    -- OVERRIDE: First position = SAPLING'S OWN POSITION!
+    if saplingOwnPos then
+        positions[1] = saplingOwnPos
+    end
+    
+    -- DUPE: Use the SAME sapling for ALL positions!
+    task.spawn(function()
+        local placed = 0
+        local failed = 0
+        
+        print("⚡ DUPING: First at YOUR position, rest with pattern!")
+        
+        -- Fire ALL at once!
+        for i = 1, #positions do
+            local pos = positions[i]
+            
+            task.spawn(function()
+                if sapling and sapling.Parent and plantRemote then
+                    local success = pcall(function()
+                        plantRemote:InvokeServer(sapling, pos)
+                    end)
+                    
+                    if success then
+                        placed = placed + 1
+                    else
+                        failed = failed + 1
+                    end
+                else
+                    failed = failed + 1
+                end
+            end)
+        end
+        
+        task.wait(0.2)
+        print("✅ DUPED! Placed: " .. placed .. " | Failed: " .. failed)
+    end)
+end)
+
+-- Place All Saplings (At Original Positions)
+createButton(tab2, "🌳 Place All Saplings", Color3.fromRGB(40, 167, 69), function()
+    print("🌳 Searching for ALL saplings in workspace...")
+    
+    local plantRemote = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    if plantRemote then
+        plantRemote = plantRemote:FindFirstChild("RequestPlantItem")
+    end
+    
+    if not plantRemote then
+        print("❌ Plant remote not found!")
+        return
+    end
+    
+    -- Find Items folder
+    local itemsFolder = workspace:FindFirstChild("Items") or workspace:FindFirstChild("Item") or workspace:FindFirstChild("items")
+    
+    if not itemsFolder then
+        print("❌ No Items folder found in workspace!")
+        return
+    end
+    
+    -- Collect ALL saplings and their original positions
+    local saplingsData = {}
+    
+    for _, obj in ipairs(itemsFolder:GetChildren()) do
+        if obj.Name == "Sapling" and obj:IsA("Model") and obj.PrimaryPart then
+            table.insert(saplingsData, {
+                sapling = obj,
+                position = obj.PrimaryPart.Position
+            })
+        end
+    end
+    
+    -- Also check Sapling folder
+    local saplingFolder = itemsFolder:FindFirstChild("Sapling")
+    if saplingFolder then
+        for _, obj in ipairs(saplingFolder:GetChildren()) do
+            if obj:IsA("Model") and obj.PrimaryPart then
+                table.insert(saplingsData, {
+                    sapling = obj,
+                    position = obj.PrimaryPart.Position
+                })
+            end
+        end
+    end
+    
+    if #saplingsData == 0 then
+        print("❌ No saplings found in workspace!")
+        return
+    end
+    
+    print("✅ Found " .. #saplingsData .. " saplings! Placing at original positions...")
+    
+    -- Fire ALL at once (batch = total count)
+    task.spawn(function()
+        local placed = 0
+        local failed = 0
+        
+        print("⚡ LIGHT SPEED: Placing all " .. #saplingsData .. " at once!")
+        
+        -- Fire ALL simultaneously
+        for i = 1, #saplingsData do
+            local data = saplingsData[i]
+            
+            task.spawn(function()
+                if data.sapling and data.sapling.Parent and plantRemote then
+                    local success = pcall(function()
+                        plantRemote:InvokeServer(data.sapling, data.position)
+                    end)
+                    
+                    if success then
+                        placed = placed + 1
+                    else
+                        failed = failed + 1
+                    end
+                else
+                    failed = failed + 1
+                end
+            end)
+        end
+        
+        task.wait(0.2)
+        print("✅ FINISHED! Placed: " .. placed .. " | Failed: " .. failed)
+    end)
+end)
+
+-- Bear Trap Section
+createSection(tab2, "🐻 Bear Trap Auto")
+
+new("TextLabel", {
+    Parent = tab2,
+    Size = UDim2.new(1, 0, 0, 70),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    TextWrapped = true,
+    TextYAlignment = Enum.TextYAlignment.Top,
+    Text = [[📝 Bear Trap Auto-Open:
+
+• Automatically triggers ALL bear traps on the map
+• Great for safely navigating dangerous areas
+• Works on all traps in the Structures folder
+• No need to manually click each trap!]],
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(220, 220, 220),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+do
+    local note = tab2:GetChildren()[#tab2:GetChildren()]
+    new("UICorner", { Parent = note, CornerRadius = UDim.new(0, 8) })
+    new("UIPadding", { Parent = note, PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+end
+
+-- Bear Trap Logic (Entire Map Scan - Heartbeat)
+local bearTrapEnabled = false
+local trapsTriggered = 0
+
+RunService.Heartbeat:Connect(function()
+    if not bearTrapEnabled then return end
+    
+    local structures = workspace:FindFirstChild("Structures")
+    if not structures then return end
+    
+    -- Scan ALL traps on entire map (no distance limit)
+    for _, trap in ipairs(structures:GetChildren()) do
+        if trap.Name == "Bear Trap" and trap:FindFirstChild("Main") then
+            local prox = trap.Main:FindFirstChild("ProximityAttachment")
+            if prox then prox = prox:FindFirstChild("ProximityInteraction") end
+            
+            if prox and prox:IsA("ProximityPrompt") and prox.Enabled then
+                local success = pcall(function()
+                    fireproximityprompt(prox)
+                end)
+                if success then
+                    trapsTriggered = trapsTriggered + 1
+                end
+            end
+        end
+    end
+end)
+
+createToggle(tab2, "🐾 Auto-Open Bear Traps", function(enabled)
+    bearTrapEnabled = enabled
+    if enabled then
+        trapsTriggered = 0
+        print("✅ Bear Trap Auto: ON - Entire map scan")
+    else
+        print("❌ Bear Trap Auto: OFF - Triggered " .. trapsTriggered .. " traps total")
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════
+-- AUTO FUEL CAMPFIRE
+-- ════════════════════════════════════════════════════════════
+
+createSection(tab2, "🔥 Auto Fuel Campfire")
+
+-- Auto Fuel Variables
+local autoFuelEnabled = false
+local autoFuelConnection = nil
+local selectedFuelTypes = {"Coal"} -- Default selection
+local allFuelTypes = {"Coal", "Fuel Canister", "Oil Barrel", "Biofuel"}
+local fuelCheckInterval = 2 -- Check every 2 seconds
+
+-- Info Label
+new("TextLabel", {
+    Parent = tab2,
+    Size = UDim2.new(1, 0, 0, 70),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    TextWrapped = true,
+    TextYAlignment = Enum.TextYAlignment.Top,
+    Text = [[🔥 Auto Fuel Campfire:
+
+• Select fuel types from dropdown (multiple selection)
+• Toggle ON to automatically bring fuel to campfire
+• Scans workspace and brings fuel every 2 seconds]],
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(220, 220, 220),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+do
+    local note = tab2:GetChildren()[#tab2:GetChildren()]
+    new("UICorner", { Parent = note, CornerRadius = UDim.new(0, 8) })
+    new("UIPadding", { Parent = note, PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+end
+
+-- Fuel Type Dropdown (Multi-Select)
+local fuelLabel = new("TextLabel", {
+    Parent = tab2,
+    Size = UDim2.new(1, 0, 0, 20),
+    BackgroundTransparency = 1,
+    Text = "⛽ Select Fuel Types:",
+    TextSize = 13,
+    TextColor3 = Color3.fromRGB(150, 150, 150),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 12
+})
+
+local fuelBtn = new("TextButton", {
+    Parent = tab2,
+    Size = UDim2.new(1, 0, 0, 40),
+    Text = "⛽ Fuel Types: " .. table.concat(selectedFuelTypes, ", ") .. " ▾",
+    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = fuelBtn, CornerRadius = UDim.new(0, 10) })
+
+local fuelList = new("Frame", {
+    Parent = mainGui,
+    Size = UDim2.new(0, 0, 0, 0),
+    Position = UDim2.new(0, 0, 0, 0),
+    BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 20
+})
+new("UICorner", { Parent = fuelList, CornerRadius = UDim.new(0, 10) })
+new("UIStroke", { Parent = fuelList, Color = Color3.fromRGB(138, 43, 226), Thickness = 2 })
+
+local fuelListLayout = new("UIListLayout", { Parent = fuelList, Padding = UDim.new(0, 6) })
+
+local function updateFuelListPosition()
+    local btnPos = fuelBtn.AbsolutePosition
+    local btnSize = fuelBtn.AbsoluteSize
+    fuelList.Position = UDim2.new(0, btnPos.X, 0, btnPos.Y + btnSize.Y + 5)
+end
+
+local function populateFuelList()
+    for _, child in ipairs(fuelList:GetChildren()) do
+        if not child:IsA("UIListLayout") and not child:IsA("UICorner") and not child:IsA("UIStroke") then
+            child:Destroy()
+        end
+    end
+    
+    for _, fuelType in ipairs(allFuelTypes) do
+        local isSelected = false
+        for _, selected in ipairs(selectedFuelTypes) do
+            if selected == fuelType then
+                isSelected = true
+                break
+            end
+        end
+        
+        local btn = new("TextButton", {
+            Parent = fuelList,
+            Size = UDim2.new(0, fuelBtn.AbsoluteSize.X - 12, 0, 32),
+            Text = isSelected and ("✅ " .. fuelType) or fuelType,
+            BackgroundColor3 = isSelected and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 65),
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = isSelected and Enum.Font.GothamBold or Enum.Font.Gotham,
+            TextSize = 13,
+            BorderSizePixel = 0,
+            ZIndex = 21
+        })
+        new("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 8) })
+        
+        btn.MouseButton1Click:Connect(function()
+            -- Toggle selection
+            local found = false
+            for idx, selected in ipairs(selectedFuelTypes) do
+                if selected == fuelType then
+                    table.remove(selectedFuelTypes, idx)
+                    found = true
+                    break
+                end
+            end
+            
+            if not found then
+                table.insert(selectedFuelTypes, fuelType)
+            end
+            
+            -- Update button text
+            if #selectedFuelTypes > 0 then
+                fuelBtn.Text = "⛽ Fuel Types: " .. table.concat(selectedFuelTypes, ", ") .. " ▾"
+            else
+                fuelBtn.Text = "⛽ Fuel Types: (None Selected) ▾"
+            end
+            
+            populateFuelList()
+        end)
+    end
+    
+    local totalHeight = #allFuelTypes * 38 + 12
+    fuelList.Size = UDim2.new(0, fuelBtn.AbsoluteSize.X, 0, totalHeight)
+end
+
+fuelBtn.MouseButton1Click:Connect(function()
+    if fuelList.Visible then
+        fuelList.Visible = false
+    else
+        updateFuelListPosition()
+        populateFuelList()
+        fuelList.Visible = true
+    end
+end)
+
+-- Auto-follow: Update position when button moves
+fuelBtn:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+    if fuelList.Visible then
+        updateFuelListPosition()
+    end
+end)
+
+fuelBtn:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+    if fuelList.Visible then
+        updateFuelListPosition()
+    end
+end)
+
+-- Auto Fuel Function
+local function autoFuelCampfire()
+    if not autoFuelEnabled then return end
+    
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if not itemsFolder then return end
+    
+    local dragRemote = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    if dragRemote then
+        dragRemote = dragRemote:FindFirstChild("RequestStartDraggingItem")
+    end
+    
+    local stopRemote = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    if stopRemote then
+        stopRemote = stopRemote:FindFirstChild("RequestStopDraggingItem")
+    end
+    
+    if not dragRemote or not stopRemote then return end
+    
+    local fuelCount = 0
+    
+    -- Scan for selected fuel types
+    for _, fuelType in ipairs(selectedFuelTypes) do
+        for _, item in ipairs(itemsFolder:GetChildren()) do
+            if item.Name == fuelType and item:IsA("Model") then
+                -- Set primary part if needed
+                if not item.PrimaryPart then
+                    for _, part in ipairs(item:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            item.PrimaryPart = part
+                            break
+                        end
+                    end
+                end
+                
+                if item.PrimaryPart then
+                    pcall(function()
+                        -- Teleport to campfire
+                        item:SetPrimaryPartCFrame(CFrame.new(campfirePos))
+                        
+                        -- Start dragging
+                        dragRemote:FireServer(item)
+                        
+                        -- Wait 3 frames
+                        task.wait()
+                        
+                        -- Stop dragging (places item)
+                        stopRemote:FireServer(item)
+                        
+                        fuelCount = fuelCount + 1
+                    end)
+                end
+            end
+        end
+    end
+    
+    if fuelCount > 0 then
+        print("🔥 Auto Fuel: Brought " .. fuelCount .. " fuel items to campfire")
+    end
+end
+
+-- Auto Fuel Toggle
+createToggle(tab2, "🔥 Auto Fuel Campfire", function(enabled)
+    autoFuelEnabled = enabled
+    
+    if enabled then
+        if #selectedFuelTypes == 0 then
+            print("⚠️ Auto Fuel: No fuel types selected! Please select fuel from dropdown.")
+            autoFuelEnabled = false
+            return
+        end
+        
+        print("✅ Auto Fuel: ON - Bringing " .. table.concat(selectedFuelTypes, ", "))
+        
+        -- Start auto fuel loop
+        autoFuelConnection = RunService.Heartbeat:Connect(function()
+            if not autoFuelEnabled then
+                if autoFuelConnection then
+                    autoFuelConnection:Disconnect()
+                    autoFuelConnection = nil
+                end
+                return
+            end
+            
+            -- Check every 2 seconds (120 frames at 60 FPS)
+            if tick() % fuelCheckInterval < 0.016 then -- ~1 frame duration
+                task.spawn(autoFuelCampfire)
+            end
+        end)
+    else
+        if autoFuelConnection then
+            autoFuelConnection:Disconnect()
+            autoFuelConnection = nil
+        end
+        print("❌ Auto Fuel: OFF")
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════
+-- MAIN TAB: KILL AURA
+-- ════════════════════════════════════════════════════════════
+
+createSection(tabMain, "⚔️ Kill Aura")
+
+-- Kill Aura Variables
+local killAuraEnabled = false
+local killAuraRadius = 200
+local killAuraConnection = nil
+
+-- Damage IDs for tools
+local toolsDamageIDs = {
+    ["Old Axe"] = "1_8982038982",
+    ["Good Axe"] = "112_8982038982",
+    ["Strong Axe"] = "116_8982038982",
+    ["Chainsaw"] = "647_8992824875",
+    ["Spear"] = "196_8999010016",
+    ["Ice Axe"] = "1019_2678646863",
+    ["MorningStar"] = "975_2678646863"
+}
+
+-- Find any supported tool in inventory
+local function getAnyToolWithDamageID()
+    for toolName, damageID in pairs(toolsDamageIDs) do
+        local tool = player.Inventory:FindFirstChild(toolName)
+        if tool then
+            return tool, damageID
+        end
+    end
+    return nil, nil
+end
+
+-- Kill Aura Loop
+local function killAuraLoop()
+    killAuraConnection = RunService.Heartbeat:Connect(function()
+        if not killAuraEnabled then
+            if killAuraConnection then
+                killAuraConnection:Disconnect()
+                killAuraConnection = nil
+            end
+            return
+        end
+        
+        local character = player.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        local tool, damageID = getAnyToolWithDamageID()
+        if not tool or not damageID then return end
+        
+        -- Check if RemoteEvents exists
+        local remoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
+        if not remoteEvents then return end
+        
+        local toolDamageRemote = remoteEvents:FindFirstChild("ToolDamageObject")
+        if not toolDamageRemote then return end
+        
+        -- Attack all mobs within radius
+        for _, mob in ipairs(workspace.Characters:GetChildren()) do
+            if mob:IsA("Model") then
+                local part = mob:FindFirstChildWhichIsA("BasePart")
+                if part and (part.Position - hrp.Position).Magnitude <= killAuraRadius then
+                    pcall(function()
+                        toolDamageRemote:InvokeServer(
+                            mob,
+                            tool,
+                            damageID,
+                            CFrame.new(part.Position)
+                        )
+                    end)
+                end
+            end
+        end
+    end)
+end
+
+-- Kill Aura Toggle
+createToggle(tabMain, "⚔️ Kill Aura", function(enabled)
+    killAuraEnabled = enabled
+    
+    if enabled then
+        killAuraLoop()
+        print("⚔️ Kill Aura: ON (Radius: " .. killAuraRadius .. ")")
+    else
+        if killAuraConnection then
+            killAuraConnection:Disconnect()
+            killAuraConnection = nil
+        end
+        print("❌ Kill Aura: OFF")
+    end
+end)
+
+-- Kill Aura Radius Control (Direct implementation)
+do
+    local radiusFrame = new("Frame", {
+        Parent = tabMain,
+        Size = UDim2.new(1, 0, 0, 45),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+        BorderSizePixel = 0,
+        ZIndex = 12
+    })
+    new("UICorner", { Parent = radiusFrame, CornerRadius = UDim.new(0, 8) })
+    
+    local radiusLabel = new("TextLabel", {
+        Parent = radiusFrame,
+        Size = UDim2.new(0.5, -10, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
+        BackgroundTransparency = 1,
+        Text = "Kill Aura Radius:",
+        TextSize = 14,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 13
+    })
+    
+    local radiusBox = new("TextBox", {
+        Parent = radiusFrame,
+        Size = UDim2.new(0.5, -20, 0, 30),
+        Position = UDim2.new(0.5, 10, 0.5, -15),
+        BackgroundColor3 = Color3.fromRGB(50, 50, 60),
+        Text = "200",
+        PlaceholderText = "20-500",
+        TextSize = 13,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        ClearTextOnFocus = false,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = radiusBox, CornerRadius = UDim.new(0, 6) })
+    
+    radiusBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local value = tonumber(radiusBox.Text)
+        if value and value > 0 then
+            killAuraRadius = math.clamp(value, 20, 500)
+            print("⚔️ Kill Aura Radius set to: " .. killAuraRadius)
+        end
+    end)
+end
+
+-- ════════════════════════════════════════════════════════════
+-- CHARACTER HIGHLIGHT
+-- ════════════════════════════════════════════════════════════
+
+createSection(tabMain, "👁️ Character Highlight")
+
+-- Highlight Variables
+local highlightEnabled = false
+local highlightConnection = nil
+local highlights = {} -- Store highlight instances
+
+-- Character Highlight Loop
+local function updateHighlights()
+    highlightConnection = RunService.Heartbeat:Connect(function()
+        if not highlightEnabled then
+            if highlightConnection then
+                highlightConnection:Disconnect()
+                highlightConnection = nil
+            end
+            return
+        end
+        
+        local characters = workspace:FindFirstChild("Characters")
+        if not characters then return end
+        
+        -- Add highlights to all characters
+        for _, character in ipairs(characters:GetChildren()) do
+            if character:IsA("Model") and character ~= player.Character then
+                -- Check if highlight already exists
+                local existingHighlight = character:FindFirstChildOfClass("Highlight")
+                
+                if not existingHighlight then
+                    -- Create new highlight
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "CharacterHighlight"
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Red fill
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- White outline
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = character
+                    
+                    table.insert(highlights, highlight)
+                end
+            end
+        end
+    end)
+end
+
+-- Character Highlight Toggle
+createToggle(tabMain, "👁️ Highlight All Characters", function(enabled)
+    highlightEnabled = enabled
+    
+    if enabled then
+        highlights = {}
+        updateHighlights()
+        print("👁️ Character Highlight: ON - All characters highlighted")
+    else
+        if highlightConnection then
+            highlightConnection:Disconnect()
+            highlightConnection = nil
+        end
+        
+        -- Remove all highlights
+        for _, highlight in ipairs(highlights) do
+            if highlight and highlight.Parent then
+                highlight:Destroy()
+            end
+        end
+        
+        -- Also remove any remaining highlights in workspace
+        local characters = workspace:FindFirstChild("Characters")
+        if characters then
+            for _, character in ipairs(characters:GetChildren()) do
+                local highlight = character:FindFirstChildOfClass("Highlight")
+                if highlight and highlight.Name == "CharacterHighlight" then
+                    highlight:Destroy()
+                end
+            end
+        end
+        
+        highlights = {}
+        print("👁️ Character Highlight: OFF - All highlights removed")
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════
+-- ════════════════════════════════════════════════════════════
+-- TREE FARM
+-- ════════════════════════════════════════════════════════════
+
+-- ════════════════════════════════════════════════════════════
+updateLoading(0.8, "Loading Player Modifier...")
+
+-- TAB 3: PLAYER MODIFIER
+-- ════════════════════════════════════════════════════════════
+
+-- Character Status Display
+createSection(tab3, "📊 Character Status")
+
+local statusFrame = new("Frame", {
+    Parent = tab3,
+    Size = UDim2.new(1, 0, 0, 415),  -- Increased from 370 to 415 (9 items)
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = statusFrame, CornerRadius = UDim.new(0, 8) })
+
+-- Status Labels
+local statusLabels = {}
+local statusData = {
+    {key = "Health", icon = "❤️", color = Color3.fromRGB(255, 85, 85)},
+    {key = "MaxHealth", icon = "💚", color = Color3.fromRGB(85, 255, 85)},
+    {key = "WalkSpeed", icon = "🏃", color = Color3.fromRGB(100, 149, 237)},
+    {key = "JumpPower", icon = "⬆️", color = Color3.fromRGB(255, 165, 0)},
+    {key = "JumpHeight", icon = "📏", color = Color3.fromRGB(255, 200, 100)},
+    {key = "Position", icon = "📍", color = Color3.fromRGB(138, 43, 226)},
+    {key = "FPS", icon = "🎮", color = Color3.fromRGB(50, 205, 50)},
+    {key = "Ping", icon = "📡", color = Color3.fromRGB(255, 105, 180)},
+    {key = "StrongholdTimer", icon = "🏰", color = Color3.fromRGB(255, 215, 0)}
+}
+
+for i, data in ipairs(statusData) do
+    local yPos = (i - 1) * 45 + 10
+    
+    local statusLabel = new("TextLabel", {
+        Parent = statusFrame,
+        Size = UDim2.new(1, -20, 0, 40),
+        Position = UDim2.fromOffset(10, yPos),
+        BackgroundColor3 = Color3.fromRGB(45, 45, 50),
+        Text = data.icon .. " " .. data.key .. ": ...",
+        TextSize = 14,
+        TextColor3 = data.color,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = statusLabel, CornerRadius = UDim.new(0, 6) })
+    new("UIPadding", { Parent = statusLabel, PaddingLeft = UDim.new(0, 10) })
+    
+    statusLabels[data.key] = statusLabel
+end
+
+-- FPS Counter
+local lastFPSUpdate = tick()
+local fpsCounter = 0
+
+-- Stronghold Timer Frame Counter
+local strongholdFrameCounter = 0
+
+-- Update Status EVERY Heartbeat (Real-Time!)
+RunService.Heartbeat:Connect(function()
+    local humanoid = getHumanoid()
+    local hrp = getHrp()
+    
+    if humanoid then
+        -- Health
+        local health = math.floor(humanoid.Health)
+        local maxHealth = math.floor(humanoid.MaxHealth)
+        statusLabels["Health"].Text = "❤️ Health: " .. health
+        statusLabels["MaxHealth"].Text = "💚 Max Health: " .. maxHealth
+        
+        -- WalkSpeed
+        local walkSpeed = math.floor(humanoid.WalkSpeed)
+        statusLabels["WalkSpeed"].Text = "🏃 WalkSpeed: " .. walkSpeed
+        
+        -- JumpPower (old) or JumpHeight (new)
+        if humanoid.UseJumpPower then
+            local jumpPower = math.floor(humanoid.JumpPower)
+            statusLabels["JumpPower"].Text = "⬆️ JumpPower: " .. jumpPower
+            statusLabels["JumpHeight"].Text = "📏 JumpHeight: N/A"
+        else
+            local jumpHeight = math.floor(humanoid.JumpHeight * 10) / 10
+            statusLabels["JumpPower"].Text = "⬆️ JumpPower: N/A"
+            statusLabels["JumpHeight"].Text = "📏 JumpHeight: " .. jumpHeight
+        end
+    end
+    
+    if hrp then
+        -- Position
+        local pos = hrp.Position
+        local posText = string.format("%.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z)
+        statusLabels["Position"].Text = "📍 Position: " .. posText
+    end
+    
+    -- FPS Counter
+    fpsCounter = fpsCounter + 1
+    local now = tick()
+    if now - lastFPSUpdate >= 1 then
+        statusLabels["FPS"].Text = "🎮 FPS: " .. fpsCounter
+        fpsCounter = 0
+        lastFPSUpdate = now
+    end
+    
+    -- Ping
+    local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+    statusLabels["Ping"].Text = "📡 Ping: " .. ping .. " ms"
+    
+    -- Stronghold Timer (Check every 60 frames)
+    strongholdFrameCounter = strongholdFrameCounter + 1
+    if strongholdFrameCounter >= 60 then
+        strongholdFrameCounter = 0
+        
+        local success, strongholdSign = pcall(function()
+            return workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame.Body
+        end)
+        
+        if success and strongholdSign and strongholdSign:IsA("TextLabel") then
+            local timerText = strongholdSign.Text
+            statusLabels["StrongholdTimer"].Text = "🏰 Stronghold Timer: " .. timerText
+        else
+            statusLabels["StrongholdTimer"].Text = "🏰 Stronghold Timer: Not Found"
+        end
+    end
+end)
+
+createSection(tab3, "💪 Health & Combat")
+
+-- God Mode Variables
+local godModeEnabled = false
+local godModeConnection = nil
+local dmgEvent = ReplicatedStorage:FindFirstChild("RemoteEvents")
+if dmgEvent then
+    dmgEvent = dmgEvent:FindFirstChild("DamagePlayer")
+end
+
+-- God Mode Toggle (Single Request, Stay Infinite)
+createToggle(tab3, "⚡ God Mode (Loop)", function(enabled)
+    godModeEnabled = enabled
+    
+    if enabled then
+        if godModeConnection then godModeConnection:Disconnect() end
+        
+        -- Single cast (health already infinite after first time)
+        local char = player.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hum and dmgEvent then
+            pcall(function()
+                dmgEvent:FireServer(-math.huge)
+            end)
+        end
+        
+        -- Maintain infinite health
+        godModeConnection = RunService.Heartbeat:Connect(function()
+            if not godModeEnabled then return end
+            
+            local char = player.Character
+            local hum = char and char:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 and hum.Health < math.huge and dmgEvent then
+                pcall(function()
+                    dmgEvent:FireServer(-math.huge)
+                end)
+            end
+        end)
+        
+        print("✅ God Mode: ON - Infinite health!")
+    else
+        if godModeConnection then
+            godModeConnection:Disconnect()
+            godModeConnection = nil
+        end
+        
+        -- Stay at infinite health (don't restore to max)
+        print("❌ God Mode: OFF - Health stays infinite")
+    end
+end)
+
+-- Heal Button (Smart Heal to Max HP)
+createButton(tab3, "💚 HEAL TO MAX HP", Color3.fromRGB(40, 167, 69), function()
+    if dmgEvent then
+        local char = player.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hum then
+            local currentHP = hum.Health
+            local maxHP = hum.MaxHealth
+            local healAmount = maxHP - currentHP
+            
+            if healAmount > 0 then
+                pcall(function()
+                    dmgEvent:FireServer(-healAmount)
+                end)
+                print("💚 Healed to MAX HP! (" .. currentHP .. " → " .. maxHP .. ")")
+            else
+                print("💚 Already at max HP! (" .. maxHP .. ")")
+            end
+        else
+            warn("⚠️ Humanoid not found!")
+        end
+    else
+        warn("⚠️ DamagePlayer event not found!")
+    end
+end)
+
+-- Set Health Textbox (Auto-set on Enter)
+local setHealthBox = createTextBox(tab3, "Set Health (Press Enter):", "Enter HP (e.g., 5000)")
+
+-- Auto-set health when Enter is pressed
+setHealthBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed and setHealthBox.Text ~= "" then
+        local targetHP = tonumber(setHealthBox.Text)
+        if targetHP and targetHP > 0 then
+            if dmgEvent then
+                pcall(function()
+                    dmgEvent:FireServer(-targetHP)
+                end)
+                print("⚡ Health set to: " .. targetHP)
+                
+                -- Auto-clear textbox
+                setHealthBox.Text = ""
+            else
+                warn("⚠️ DamagePlayer event not found!")
+            end
+        else
+            warn("⚠️ Invalid HP value! Enter a positive number.")
+            setHealthBox.Text = ""
+        end
+    end
+end)
+
+-- Movement Section
+createSection(tab3, "🏃 Movement")
+
+-- Anti-Lag Speed System Variables
+local speedMaintenanceEnabled = false
+local speedMaintenanceConnection = nil
+local targetSpeed = 16
+
+-- Speed Modifier
+local speedTextBox = createTextBox(tab3, "Walk Speed:", "16")
+speedTextBox.Text = tostring(savedSettings.speed)
+
+createButton(tab3, "⚡ SET SPEED", Color3.fromRGB(138, 43, 226), function()
+    local speed = tonumber(speedTextBox.Text)
+    if speed then
+        targetSpeed = speed
+        savedSettings.speed = speed
+        saveSettings()
+        local hum = getHumanoid()
+        if hum then
+            hum.WalkSpeed = speed
+            print("⚡ Speed set to: " .. speed .. " (Saved!)")
+            if speedMaintenanceEnabled then
+                print("⚡ Anti-Lag Speed updated to: " .. speed)
+            end
+        end
+    else
+        warn("⚠️ Invalid speed value!")
+    end
+end)
+
+-- Anti-Lag Speed Toggle (NEW)
+createToggle(tab3, "⚡ Anti-Lag Speed Maintenance", function(enabled)
+    speedMaintenanceEnabled = enabled
+    
+    if enabled then
+        if speedMaintenanceConnection then speedMaintenanceConnection:Disconnect() end
+        
+        local hum = getHumanoid()
+        if hum then
+            targetSpeed = hum.WalkSpeed
+            
+            speedMaintenanceConnection = RunService.Heartbeat:Connect(function()
+                if not speedMaintenanceEnabled then return end
+                
+                local hum = getHumanoid()
+                local hrp = getHrp()
+                if not hum or not hrp then return end
+                
+                -- Force speed to stay at target (ignores lag)
+                hum.WalkSpeed = targetSpeed
+                
+                -- Velocity-based anti-lag
+                if hum.MoveDirection.Magnitude > 0 then
+                    -- Player is trying to move
+                    local currentVelocity = hrp.AssemblyLinearVelocity
+                    local horizontalVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
+                    
+                    -- If velocity is too low (lag detected), force it
+                    if horizontalVelocity.Magnitude < targetSpeed * 0.5 then
+                        local moveDirection = hum.MoveDirection
+                        local targetVelocity = moveDirection * targetSpeed
+                        
+                        -- Force velocity to maintain speed during lag
+                        hrp.AssemblyLinearVelocity = Vector3.new(
+                            targetVelocity.X,
+                            currentVelocity.Y, -- Keep Y for jumping
+                            targetVelocity.Z
+                        )
+                    end
+                end
+            end)
+            
+            print("⚡ Anti-Lag Speed: ON - Speed locked at " .. targetSpeed)
+        end
+    else
+        if speedMaintenanceConnection then
+            speedMaintenanceConnection:Disconnect()
+            speedMaintenanceConnection = nil
+        end
+        print("❌ Anti-Lag Speed: OFF")
+    end
+end)
+
+-- Speed Presets (NEW)
+local presetFrame = new("Frame", {
+    Parent = tab3,
+    Size = UDim2.new(1, 0, 0, 140),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = presetFrame, CornerRadius = UDim.new(0, 8) })
+
+local presetLabel = new("TextLabel", {
+    Parent = presetFrame,
+    Size = UDim2.new(1, -10, 0, 25),
+    Position = UDim2.fromOffset(5, 5),
+    BackgroundTransparency = 1,
+    Text = "⚡ Speed Presets:",
+    TextSize = 14,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+local presets = {
+    {name = "Walk", speed = 16, color = Color3.fromRGB(100, 100, 100)},
+    {name = "Run", speed = 32, color = Color3.fromRGB(88, 166, 88)},
+    {name = "Sprint", speed = 64, color = Color3.fromRGB(255, 165, 0)},
+    {name = "Super", speed = 128, color = Color3.fromRGB(138, 43, 226)},
+    {name = "Flash", speed = 256, color = Color3.fromRGB(255, 50, 50)}
+}
+
+for i, preset in ipairs(presets) do
+    local btn = new("TextButton", {
+        Parent = presetFrame,
+        Size = UDim2.new(0.19, 0, 0, 35),
+        Position = UDim2.new((i-1) * 0.2 + 0.01, 0, 0, 35),
+        BackgroundColor3 = preset.color,
+        Text = preset.name .. "\n" .. preset.speed,
+        TextSize = 11,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 6) })
+    
+    btn.MouseButton1Click:Connect(function()
+        targetSpeed = preset.speed
+        local hum = getHumanoid()
+        if hum then
+            hum.WalkSpeed = preset.speed
+            print("⚡ Speed preset: " .. preset.name .. " (" .. preset.speed .. ")")
+            if speedMaintenanceEnabled then
+                print("⚡ Anti-Lag Speed updated to: " .. preset.speed)
+            end
+        end
+    end)
+end
+
+-- No Clip Toggle (NEW)
+local noClipEnabled = false
+local noClipConnection = nil
+
+createToggle(tab3, "👻 No Clip (Walk Through Walls)", function(enabled)
+    noClipEnabled = enabled
+    
+    if enabled then
+        if noClipConnection then noClipConnection:Disconnect() end
+        
+        noClipConnection = RunService.Stepped:Connect(function()
+            if not noClipEnabled then return end
+            
+            local char = player.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+        
+        print("👻 No Clip: ON - Walk through walls!")
+    else
+        if noClipConnection then
+            noClipConnection:Disconnect()
+            noClipConnection = nil
+        end
+        
+        -- Re-enable collision
+        local char = player.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                    part.CanCollide = true
+                end
+            end
+        end
+        
+        print("👻 No Clip: OFF")
+    end
+end)
+
+-- Infinite Jump Toggle (NEW)
+local infiniteJumpEnabled = false
+local infiniteJumpConnection = nil
+
+createToggle(tab3, "🚀 Infinite Jump", function(enabled)
+    infiniteJumpEnabled = enabled
+    
+    if enabled then
+        if infiniteJumpConnection then infiniteJumpConnection:Disconnect() end
+        
+        infiniteJumpConnection = UserInputService.JumpRequest:Connect(function()
+            if not infiniteJumpEnabled then return end
+            
+            local hum = getHumanoid()
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+        
+        print("🚀 Infinite Jump: ON - Jump in mid-air!")
+    else
+        if infiniteJumpConnection then
+            infiniteJumpConnection:Disconnect()
+            infiniteJumpConnection = nil
+        end
+        print("🚀 Infinite Jump: OFF")
+    end
+end)
+
+do -- Map Spinner scope: keeps local count under 200
+-- Map Spinner Section
+createSection(tab3, "🌀 Map Spinner")
+
+local spinning = false
+local spinConnection = nil
+local spinSpeed = 50
+local spinRadius = 100
+local spinHeight = 50
+local spinPattern = "Circle" -- Circle, Square, Figure8
+
+local spinSpeedBox = createTextBox(tab3, "Spin Speed:", "50")
+spinSpeedBox.Text = "50"
+
+local spinRadiusBox = createTextBox(tab3, "Radius:", "100")
+spinRadiusBox.Text = "100"
+
+local spinHeightBox = createTextBox(tab3, "Height (Y):", "50")
+spinHeightBox.Text = "50"
+
+local radiusIncreaseBox = createTextBox(tab3, "Increase Radius After Spin:", "10")
+radiusIncreaseBox.Text = "10"
+
+-- Pattern Selection (NEW)
+local patternFrame = new("Frame", {
+    Parent = tab3,
+    Size = UDim2.new(1, 0, 0, 80),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = patternFrame, CornerRadius = UDim.new(0, 8) })
+
+local patternLabel = new("TextLabel", {
+    Parent = patternFrame,
+    Size = UDim2.new(1, -10, 0, 25),
+    Position = UDim2.fromOffset(5, 5),
+    BackgroundTransparency = 1,
+    Text = "🌀 Spin Pattern:",
+    TextSize = 14,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+local patterns = {"Circle", "Square", "Figure8"}
+for i, pattern in ipairs(patterns) do
+    local btn = new("TextButton", {
+        Parent = patternFrame,
+        Size = UDim2.new(0.32, 0, 0, 35),
+        Position = UDim2.new((i-1) * 0.33 + 0.01, 0, 0, 40),
+        BackgroundColor3 = pattern == "Circle" and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70),
+        Text = pattern == "Figure8" and "Figure-8" or pattern,
+        TextSize = 13,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 6) })
+    
+    btn.MouseButton1Click:Connect(function()
+        spinPattern = pattern
+        -- Update all button colors
+        for _, child in ipairs(patternFrame:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+            end
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+        print("🌀 Spin pattern changed to: " .. pattern)
+    end)
+end
+
+-- Spin Functions
+local function spinCircle(angle, radius, center)
+    local rad = math.rad(angle)
+    local x = center.X + radius * math.cos(rad)
+    local z = center.Z + radius * math.sin(rad)
+    return Vector3.new(x, center.Y, z)
+end
+
+local function spinSquare(angle, radius, center)
+    local side = angle % 90
+    local quadrant = math.floor(angle / 90) % 4
+    local offset = (side / 90) * radius * 2 - radius
+    
+    if quadrant == 0 then
+        return Vector3.new(center.X + radius, center.Y, center.Z + offset)
+    elseif quadrant == 1 then
+        return Vector3.new(center.X - offset, center.Y, center.Z + radius)
+    elseif quadrant == 2 then
+        return Vector3.new(center.X - radius, center.Y, center.Z - offset)
+    else
+        return Vector3.new(center.X + offset, center.Y, center.Z - radius)
+    end
+end
+
+local function spinFigure8(angle, radius, center)
+    local rad = math.rad(angle)
+    local x = center.X + radius * math.sin(rad)
+    local z = center.Z + radius * math.sin(rad * 2) / 2
+    return Vector3.new(x, center.Y, z)
+end
+
+createToggle(tab3, "🌀 Start Spinning", function(enabled)
+    spinning = enabled
+    
+    if enabled then
+        spinSpeed = tonumber(spinSpeedBox.Text) or 50
+        spinRadius = tonumber(spinRadiusBox.Text) or 100
+        spinHeight = tonumber(spinHeightBox.Text) or 50
+        local radiusIncrease = tonumber(radiusIncreaseBox.Text) or 10
+        
+        if spinConnection then spinConnection:Disconnect() end
+        
+        local angle = 0
+        local centerPos = Vector3.new(0, spinHeight, 0)
+        local lastUpdate = tick()
+        local currentRadius = spinRadius -- Track current radius
+        
+        spinConnection = RunService.Heartbeat:Connect(function()
+            if not spinning then return end
+            
+            local hrp = getHrp()
+            if not hrp then return end
+            
+            -- Delta time compensation for lag (anti-lag)
+            local now = tick()
+            local deltaTime = now - lastUpdate
+            lastUpdate = now
+            
+            -- Clamp delta time to prevent huge jumps during lag spikes
+            deltaTime = math.min(deltaTime, 0.1)
+            
+            -- Update angle with delta time compensation
+            angle = angle + (spinSpeed / 100) * (deltaTime * 60) -- Normalize to 60 FPS
+            
+            -- After full spin, increase radius
+            if angle >= 360 then
+                angle = 0
+                currentRadius = currentRadius + radiusIncrease
+                print("🌀 Spin complete! New radius: " .. currentRadius)
+            end
+            
+            local newPos
+            if spinPattern == "Circle" then
+                newPos = spinCircle(angle, currentRadius, centerPos)
+            elseif spinPattern == "Square" then
+                newPos = spinSquare(angle, currentRadius, centerPos)
+            elseif spinPattern == "Figure8" then
+                newPos = spinFigure8(angle, currentRadius, centerPos)
+            end
+            
+            -- Use CFrame for instant positioning (ignores physics/lag)
+            hrp.CFrame = CFrame.new(newPos)
+            
+            -- Force velocity to zero to prevent physics interference
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end)
+        
+        print("🌀 Spinning: " .. spinPattern .. " | Speed: " .. spinSpeed .. " | Start Radius: " .. spinRadius .. " | Increase: " .. radiusIncrease)
+    else
+        if spinConnection then
+            spinConnection:Disconnect()
+            spinConnection = nil
+        end
+        print("❌ Spinning: OFF")
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════
+-- SAVE/LOAD SYSTEM
+end -- Map Spinner scope
+
+-- ════════════════════════════════════════════════════════════
+
+createSection(tab3, "💾 Save/Load Settings")
+
+-- Info Label
+new("TextLabel", {
+    Parent = tab3,
+    Size = UDim2.new(1, 0, 0, 70),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    TextWrapped = true,
+    TextYAlignment = Enum.TextYAlignment.Top,
+    Text = [[💾 Save/Load System:
+
+Settings are automatically saved when you change them!
+Use these buttons to manually save or reset to defaults.]],
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(220, 220, 220),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+do
+    local info = tab3:GetChildren()[#tab3:GetChildren()]
+    new("UICorner", { Parent = info, CornerRadius = UDim.new(0, 8) })
+    new("UIPadding", { Parent = info, PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+end
+
+-- Manual Save Button
+createButton(tab3, "💾 SAVE ALL SETTINGS", Color3.fromRGB(40, 167, 69), function()
+    saveSettings()
+    print("💾 All settings saved to file!")
+end)
+
+-- Reset to Defaults Button
+createButton(tab3, "🔄 RESET TO DEFAULTS", Color3.fromRGB(220, 53, 69), function()
+    savedSettings = {
+        speed = 16,
+        jumpPower = 50,
+        saplingPattern = "Me",
+        saplingCount = 100,
+        saplingRadius = 150,
+        centerPosition = "Me",
+        killAuraRadius = 200,
+        spinSpeed = 50,
+        spinRadius = 100,
+        waypoints = {}
+    }
+    saveSettings()
+    print("🔄 Settings reset to defaults and saved!")
+end)
+
+-- Show Current Settings Button
+createButton(tab3, "📊 SHOW CURRENT SETTINGS", Color3.fromRGB(100, 149, 237), function()
+    print("╔═══════════════════════════════════╗")
+    print("║  📊 CURRENT SETTINGS             ║")
+    print("╠═══════════════════════════════════╣")
+    for key, value in pairs(savedSettings) do
+        if type(value) ~= "table" then
+            print("║  " .. key .. ": " .. tostring(value))
+        end
+    end
+    print("╚═══════════════════════════════════╝")
+end)
+
+-- ════════════════════════════════════════════════════════════
+updateLoading(0.9, "Loading Teleport system...")
+
+-- TAB 4: TELEPORT
+-- ════════════════════════════════════════════════════════════
+
+createSection(tab4, "🌐 Quick Teleports")
+
+-- Teleport to Campfire
+createButton(tab4, "🔥 Teleport to Campfire", Color3.fromRGB(255, 140, 0), function()
+    local hrp = getHrp()
+    if hrp then
+        hrp.CFrame = CFrame.new(Vector3.new(0.055, 17.578, 0.212))
+        print("🔥 Teleported to Campfire")
+    end
+end)
+
+-- Teleport to Scrapper
+createButton(tab4, "⚙️ Teleport to Scrapper", Color3.fromRGB(138, 43, 226), function()
+    local hrp = getHrp()
+    if hrp then
+        hrp.CFrame = CFrame.new(Vector3.new(20.111, 10.234, -4.688))
+        print("⚙️ Teleported to Scrapper")
+    end
+end)
+
+-- Manual Void Y Override
+new("TextLabel", {
+    Parent = tab4,
+    Size = UDim2.new(1, 0, 0, 60),
+    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    TextWrapped = true,
+    TextYAlignment = Enum.TextYAlignment.Top,
+    Text = [[💡 Void Detection: Auto-detects from Workspace.FallenPartsDestroyHeight or lowest ground. If auto-detect fails, manually set Y value below!]],
+    TextSize = 11,
+    TextColor3 = Color3.fromRGB(200, 200, 200),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = tab4:GetChildren()[#tab4:GetChildren()], CornerRadius = UDim.new(0, 8) })
+new("UIPadding", { Parent = tab4:GetChildren()[#tab4:GetChildren()], PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+
+savedSettings.voidTextBoxRef = createTextBox(tab4, "🌀 Void Y Position:", tostring(voidY))
+savedSettings.voidTextBoxRef.Text = tostring(voidY)
+savedSettings.voidTextBoxRef:GetPropertyChangedSignal("Text"):Connect(function()
+    local value = tonumber(savedSettings.voidTextBoxRef.Text)
+    if value then
+        voidY = value
+        print("🌀 Void Y manually set to: " .. voidY)
+    end
+end)
+
+-- Re-Detect Void Button
+createButton(tab4, "🔍 Re-Detect Void Depth", Color3.fromRGB(100, 149, 237), function()
+    local workspace = game:GetService("Workspace")
+    
+    -- Try FallenPartsDestroyHeight first
+    local success, result = pcall(function()
+        return workspace.FallenPartsDestroyHeight
+    end)
+    
+    if success and result then
+        voidY = result
+        if savedSettings.voidTextBoxRef then
+            savedSettings.voidTextBoxRef.Text = tostring(voidY)
+        end
+        print("🌀 Void from FallenPartsDestroyHeight: Y = " .. voidY)
+        return
+    end
+    
+    -- Otherwise scan for lowest solid ground
+    local lowestY = 0
+    local foundGround = false
+    
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.CanCollide then
+            foundGround = true
+            if obj.Position.Y < lowestY then
+                lowestY = obj.Position.Y
+            end
+        end
+    end
+    
+    if foundGround and lowestY < 0 then
+        voidY = lowestY - 50
+    else
+        voidY = -500
+    end
+    
+    if savedSettings.voidTextBoxRef then
+        savedSettings.voidTextBoxRef.Text = tostring(voidY)
+    end
+    print("🌀 Void re-detected: Y = " .. voidY)
+end)
+
+-- Teleport to Void
+createButton(tab4, "🌀 Teleport to Void", Color3.fromRGB(128, 0, 128), function()
+    local hrp = getHrp()
+    if hrp then
+        hrp.CFrame = CFrame.new(Vector3.new(0, voidY, 0))
+        print("🌀 Teleported to Void (Y = " .. voidY .. ")")
+    end
+end)
+
+createSection(tab4, "👥 Teleport to Players")
+
+-- Player Teleport List (Scrollable)
+do
+    local playerTeleportFrame = new("Frame", {
+        Parent = tab4,
+        Size = UDim2.new(1, 0, 0, 300),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+        BorderSizePixel = 0,
+        ZIndex = 12
+    })
+    new("UICorner", { Parent = playerTeleportFrame, CornerRadius = UDim.new(0, 8) })
+    
+    savedSettings.playerScroll = new("ScrollingFrame", {
+        Parent = playerTeleportFrame,
+        Size = UDim2.new(1, -10, 1, -10),
+        Position = UDim2.fromOffset(5, 5),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ZIndex = 13
+    })
+    
+    do
+        local playerListLayout = new("UIListLayout", {
+            Parent = savedSettings.playerScroll,
+            Padding = UDim.new(0, 5),
+            SortOrder = Enum.SortOrder.Name
+        })
+        
+        playerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            savedSettings.playerScroll.CanvasSize = UDim2.new(0, 0, 0, playerListLayout.AbsoluteContentSize.Y + 5)
+        end)
+    end
+end
+
+-- Function to update player list
+local function updatePlayerList()
+    -- Clear existing buttons
+    for _, child in ipairs(savedSettings.playerScroll:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    -- Add button for each player
+    for _, targetPlayer in ipairs(Players:GetPlayers()) do
+        if targetPlayer ~= player then
+            local playerBtn = new("TextButton", {
+                Parent = savedSettings.playerScroll,
+                Size = UDim2.new(1, -10, 0, 35),
+                BackgroundColor3 = Color3.fromRGB(50, 50, 60),
+                Text = "👤 " .. targetPlayer.Name,
+                TextSize = 13,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                Font = Enum.Font.Gotham,
+                BorderSizePixel = 0,
+                ZIndex = 14
+            })
+            new("UICorner", { Parent = playerBtn, CornerRadius = UDim.new(0, 6) })
+            
+            playerBtn.MouseButton1Click:Connect(function()
+                local hrp = getHrp()
+                local targetChar = targetPlayer.Character
+                local targetHrp = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+                
+                if hrp and targetHrp then
+                    hrp.CFrame = targetHrp.CFrame
+                    print("👤 Teleported to: " .. targetPlayer.Name)
+                else
+                    warn("❌ Could not teleport to: " .. targetPlayer.Name)
+                end
+            end)
+        end
+    end
+end
+
+-- Initial update
+updatePlayerList()
+
+-- Update when players join/leave
+Players.PlayerAdded:Connect(function()
+    task.wait(0.5)
+    updatePlayerList()
+end)
+
+Players.PlayerRemoving:Connect(function()
+    task.wait(0.5)
+    updatePlayerList()
+end)
+
+-- Refresh button
+createButton(tab4, "🔄 Refresh Player List", Color3.fromRGB(100, 149, 237), function()
+    updatePlayerList()
+    print("🔄 Player list refreshed")
+end)
+
+
+-- ════════════════════════════════════════════════════════════
+do -- Console tab scope: keeps local count under 200
+-- TAB 5: CONSOLE (In-Game Log Viewer)
+-- ════════════════════════════════════════════════════════════
+
+local tabConsole = createTab("Console", "📟", 6)
+
+-- Console variables
+local consoleLogs = {}
+local MAX_LOGS = 200
+local consoleListLayout
+local consoleScroll
+
+-- ── Console UI ──────────────────────────────────────────────
+
+-- Header row (title + clear button side by side)
+local consoleHeaderFrame = new("Frame", {
+    Parent = tabConsole,
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(30, 30, 35),
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = consoleHeaderFrame, CornerRadius = UDim.new(0, 8) })
+
+new("TextLabel", {
+    Parent = consoleHeaderFrame,
+    Size = UDim2.new(0.6, 0, 1, 0),
+    Position = UDim2.fromOffset(10, 0),
+    BackgroundTransparency = 1,
+    Text = "📟 Console Logs",
+    TextSize = 15,
+    TextColor3 = Color3.fromRGB(180, 140, 255),
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 13
+})
+
+-- Counter label
+local logCountLabel = new("TextLabel", {
+    Parent = consoleHeaderFrame,
+    Size = UDim2.new(0.25, 0, 1, 0),
+    Position = UDim2.new(0.55, 0, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "0 logs",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(130, 130, 130),
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    ZIndex = 13
+})
+
+-- Clear button
+local clearBtn = new("TextButton", {
+    Parent = consoleHeaderFrame,
+    Size = UDim2.new(0, 70, 0, 28),
+    Position = UDim2.new(1, -78, 0.5, -14),
+    BackgroundColor3 = Color3.fromRGB(200, 50, 50),
+    Text = "🗑 Clear",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    ZIndex = 13
+})
+new("UICorner", { Parent = clearBtn, CornerRadius = UDim.new(0, 6) })
+
+-- Scrollable log area
+consoleScroll = new("ScrollingFrame", {
+    Parent = tabConsole,
+    Size = UDim2.new(1, 0, 0, 420),
+    BackgroundColor3 = Color3.fromRGB(18, 18, 22),
+    BorderSizePixel = 0,
+    ScrollBarThickness = 5,
+    ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226),
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    ZIndex = 12
+})
+new("UICorner", { Parent = consoleScroll, CornerRadius = UDim.new(0, 8) })
+new("UIStroke", { Parent = consoleScroll, Color = Color3.fromRGB(60, 60, 80), Thickness = 1 })
+
+consoleListLayout = new("UIListLayout", {
+    Parent = consoleScroll,
+    Padding = UDim.new(0, 2),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    VerticalAlignment = Enum.VerticalAlignment.Top
+})
+new("UIPadding", {
+    Parent = consoleScroll,
+    PaddingTop = UDim.new(0, 6),
+    PaddingLeft = UDim.new(0, 6),
+    PaddingRight = UDim.new(0, 8),
+    PaddingBottom = UDim.new(0, 6)
+})
+
+consoleListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    consoleScroll.CanvasSize = UDim2.new(0, 0, 0, consoleListLayout.AbsoluteContentSize.Y + 12)
+end)
+
+-- ── Log entry builder ───────────────────────────────────────
+local logOrder = 0
+
+local function addConsoleEntry(kind, text)
+    logOrder = logOrder + 1
+
+    -- Trim old entries if over limit
+    if #consoleLogs >= MAX_LOGS then
+        local oldest = consoleLogs[1]
+        if oldest and oldest.Parent then
+            oldest:Destroy()
+        end
+        table.remove(consoleLogs, 1)
+    end
+
+    -- Timestamp
+    local h = math.floor(tick() / 3600) % 24
+    local m = math.floor(tick() / 60) % 60
+    local s = math.floor(tick()) % 60
+    local timeStr = string.format("%02d:%02d:%02d", h, m, s)
+
+    -- Colours
+    local bgColor, textColor, tagText, tagColor
+    if kind == "warn" then
+        bgColor   = Color3.fromRGB(45, 38, 20)
+        textColor = Color3.fromRGB(255, 210, 80)
+        tagText   = "WARN"
+        tagColor  = Color3.fromRGB(255, 165, 0)
+    elseif kind == "error" then
+        bgColor   = Color3.fromRGB(45, 20, 20)
+        textColor = Color3.fromRGB(255, 100, 100)
+        tagText   = "ERR"
+        tagColor  = Color3.fromRGB(255, 60, 60)
+    else
+        bgColor   = Color3.fromRGB(25, 25, 30)
+        textColor = Color3.fromRGB(200, 200, 200)
+        tagText   = "LOG"
+        tagColor  = Color3.fromRGB(100, 200, 100)
+    end
+
+    -- Row frame (auto-height via TextWrapped)
+    local row = new("Frame", {
+        Parent = consoleScroll,
+        Size = UDim2.new(1, -8, 0, 28),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = bgColor,
+        BorderSizePixel = 0,
+        LayoutOrder = logOrder,
+        ZIndex = 13
+    })
+    new("UICorner", { Parent = row, CornerRadius = UDim.new(0, 5) })
+
+    -- Tag badge
+    local tag = new("TextLabel", {
+        Parent = row,
+        Size = UDim2.new(0, 38, 0, 22),
+        Position = UDim2.fromOffset(4, 3),
+        BackgroundColor3 = tagColor,
+        Text = tagText,
+        TextSize = 10,
+        TextColor3 = Color3.fromRGB(15, 15, 15),
+        Font = Enum.Font.GothamBold,
+        ZIndex = 14
+    })
+    new("UICorner", { Parent = tag, CornerRadius = UDim.new(0, 4) })
+
+    -- Timestamp
+    new("TextLabel", {
+        Parent = row,
+        Size = UDim2.new(0, 65, 0, 22),
+        Position = UDim2.fromOffset(46, 3),
+        BackgroundTransparency = 1,
+        Text = timeStr,
+        TextSize = 10,
+        TextColor3 = Color3.fromRGB(100, 100, 120),
+        Font = Enum.Font.Code,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 14
+    })
+
+    -- Message (wraps)
+    new("TextLabel", {
+        Parent = row,
+        Size = UDim2.new(1, -120, 0, 22),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        Position = UDim2.fromOffset(114, 3),
+        BackgroundTransparency = 1,
+        Text = tostring(text),
+        TextSize = 11,
+        TextColor3 = textColor,
+        Font = Enum.Font.Code,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextWrapped = true,
+        ZIndex = 14
+    })
+
+    table.insert(consoleLogs, row)
+
+    -- Update counter
+    logCountLabel.Text = #consoleLogs .. " / " .. MAX_LOGS .. " logs"
+
+    -- Auto-scroll to bottom
+    task.defer(function()
+        consoleScroll.CanvasPosition = Vector2.new(0, math.huge)
+    end)
+end
+
+-- ── Clear button ────────────────────────────────────────────
+clearBtn.MouseButton1Click:Connect(function()
+    for _, entry in ipairs(consoleLogs) do
+        if entry and entry.Parent then entry:Destroy() end
+    end
+    consoleLogs = {}
+    logCountLabel.Text = "0 logs"
+    consoleScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+end)
+
+-- ── Hook print / warn ────────────────────────────────────────
+-- Store originals so they still work normally
+local _origPrint = print
+local _origWarn  = warn
+
+print = function(...)
+    local parts = {}
+    for i = 1, select("#", ...) do
+        parts[i] = tostring(select(i, ...))
+    end
+    local msg = table.concat(parts, "\t")
+    _origPrint(...)
+    pcall(addConsoleEntry, "print", msg)
+end
+
+warn = function(...)
+    local parts = {}
+    for i = 1, select("#", ...) do
+        parts[i] = tostring(select(i, ...))
+    end
+    local msg = table.concat(parts, "\t")
+    _origWarn(...)
+    pcall(addConsoleEntry, "warn", msg)
+end
+
+-- ── info label at bottom ─────────────────────────────────────
+new("TextLabel", {
+    Parent = tabConsole,
+    Size = UDim2.new(1, 0, 0, 28),
+    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
+    Text = "ℹ️  Shows all print() & warn() calls from this script",
+    TextSize = 11,
+    TextColor3 = Color3.fromRGB(120, 120, 150),
+    Font = Enum.Font.Gotham,
+    BorderSizePixel = 0,
+    ZIndex = 12
+})
+new("UICorner", { Parent = tabConsole:GetChildren()[#tabConsole:GetChildren()], CornerRadius = UDim.new(0, 6) })
+
+-- ════════════════════════════════════════════════════════════
+end -- Console tab scope
+
+-- FINAL SETUP
+-- ════════════════════════════════════════════════════════════
+
+updateLoading(0.95, "Finalizing...")
+task.wait(0.3)
+
+updateLoading(1.0, "Complete!")
+task.wait(0.5)
+
+-- Close loading screen
+loadingGui:Destroy()
+
+print("╔═══════════════════════════════════════════════════════════╗")
+print("║  🌙 99 NIGHTS: ETERNAL NEXUS - ULTIMATE v3.0           ║")
+print("║  All systems loaded & improved!                        ║")
+print("║  ⚔️ Kill Aura | 👁️ Highlight | 📊 Real-Time Stats     ║")
+print("║  🌱 Advanced Sapling | 🐾 Bear Trap | ♻️ Dupe Sapling  ║")
+print("║  ⚡ God Mode+ | 🏃 Movement++ | 🌀 Map Spinner+        ║")
+print("║  💾 Save/Load System | 🌀 Auto Void Detect: Y=" .. voidY .. " ║")
+print("║  Press the 🌙 button to toggle the GUI                ║")
+print("╚═══════════════════════════════════════════════════════════╝")
