@@ -1606,7 +1606,7 @@ end)
 ui.autoGoodKarmaToggle = createToggle(f_killer, "Auto Good Karma", "autoGoodKarma", function(val) KillerState.autoGoodKarmaEnabled = val; if not val then for name in pairs(killSources.goodKarma) do killSources.goodKarma[name] = nil end end; return val end)
 ui.autoEvilKarmaToggle = createToggle(f_killer, "Auto Evil Karma", "autoEvilKarma", function(val) KillerState.autoEvilKarmaEnabled = val; if not val then for name in pairs(killSources.evilKarma) do killSources.evilKarma[name] = nil end end; return val end)
 
--- NEW KILLER LOGIC: Magnet-style with invisible hitbox, motor6D disabled (parent = nil), and teleporting
+-- NEW KILLER LOGIC: Disable Motor6D (attachments) before teleporting the hitbox to your right hand
 local disabledMotorMap = {} -- playerName -> { {motor6D, originalParent}, ... }
 
 local function getEffectiveTargetSet()
@@ -1640,7 +1640,7 @@ for _, motor in ipairs(char:GetDescendants()) do
 if motor:IsA("Motor6D") and (motor.Name == "RootJoint" or motor.Name == "Root") then
 if motor.Part0 == hrp or motor.Part1 == hrp then
 table.insert(disabledMotorMap[targetName], {motor, motor.Parent})
-motor.Parent = nil
+motor.Parent = nil -- Disable the Motor6D attachment
 end
 end
 end
@@ -1687,10 +1687,10 @@ local char = targetPlayer.Character
 local hrp = char:FindFirstChild("HumanoidRootPart")
 if not hrp then continue end
 
--- Disable motor6Ds if not already done
+-- Disable motor6Ds (attachments) BEFORE teleporting
 disableMotor6DsForTarget(char, targetName)
 
--- Teleport hitbox to hand, make it invisible
+-- Teleport the hitbox to your right hand (invisible)
 hrp.CFrame = rightHand.CFrame
 hrp.Velocity = Vector3.zero
 hrp.Transparency = 1
