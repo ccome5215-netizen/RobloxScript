@@ -73,15 +73,31 @@ local function showKeyInput()
     KeyFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     KeyFrame.BorderSizePixel = 0
     Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0, 8)
+    makeDraggable(KeyFrame) -- Make key system draggable
 
     local KeyTitle = Instance.new("TextLabel", KeyFrame)
-    KeyTitle.Size = UDim2.new(1, 0, 0, 40)
+    KeyTitle.Size = UDim2.new(1, -40, 0, 40)
     KeyTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    KeyTitle.Text = "Master Legends - Key System"  -- Changed from Muscle Legends V1.05
+    KeyTitle.Text = "Master Legends - Key System"
     KeyTitle.TextColor3 = Color3.new(1, 1, 1)
     KeyTitle.Font = Enum.Font.GothamBold
     KeyTitle.TextSize = 16
     Instance.new("UICorner", KeyTitle).CornerRadius = UDim.new(0, 8)
+
+    -- Close button (X) for Key System
+    local KeyCloseBtn = Instance.new("TextButton", KeyFrame)
+    KeyCloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    KeyCloseBtn.Position = UDim2.new(1, -35, 0, 5)
+    KeyCloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    KeyCloseBtn.Text = "X"
+    KeyCloseBtn.TextColor3 = Color3.new(1, 1, 1)
+    KeyCloseBtn.Font = Enum.Font.GothamBold
+    KeyCloseBtn.TextSize = 16
+    Instance.new("UICorner", KeyCloseBtn).CornerRadius = UDim.new(0, 4)
+
+    KeyCloseBtn.MouseButton1Click:Connect(function()
+        KeyGui:Destroy()
+    end)
 
     local KeyInput = Instance.new("TextBox", KeyFrame)
     KeyInput.Size = UDim2.new(1, -20, 0, 35)
@@ -420,7 +436,14 @@ if State.selectedMap == "Muscle King Island" and not isLocalPlayerMuscleKing() a
 local char = player.Character
 if not char then continue end
 local root, hum = char:FindFirstChild("HumanoidRootPart"), char:FindFirstChild("Humanoid")
-if not root or not hum or hum.Health <= 0 or hum.Sit then continue end
+if not root or not hum or hum.Health <= 0 then continue end
+
+-- If sitting but we want to change gym, stand up first
+if hum.Sit then
+    hum.Sit = false
+    task.wait(0.3)
+end
+
 if tick() - lastTpTime >= 0.5 then
 pcall(function() root.CFrame = CFrame.new(gym.pos + Vector3.new(0, 4, 0)); root.AssemblyLinearVelocity = Vector3.zero end)
 lastTpTime = tick()
@@ -491,6 +514,29 @@ State.leaderboardData = data
 return data
 end
 local function getPlayerDisplayString(p) return p.DisplayName == p.Name and p.Name or p.DisplayName .. " (" .. p.Name .. ")" end
+
+-- Simple Inventory Counter for key items
+local function getInventoryCounts()
+local counts = {
+["Protein Egg"] = 0,
+["Energy Drink"] = 0,
+["Weight"] = 0,
+["Punch"] = 0
+}
+local char = player.Character
+local bp = player:FindFirstChild("Backpack")
+if bp then
+for _, item in ipairs(bp:GetChildren()) do
+if counts[item.Name] then counts[item.Name] += 1 end
+end
+end
+if char then
+for _, item in ipairs(char:GetChildren()) do
+if counts[item.Name] then counts[item.Name] += 1 end
+end
+end
+return counts
+end
 local function getUsernameFromDisplay(display)
 local startParen = display:find(" %(")
 return startParen and display:sub(startParen + 2, -2) or display
@@ -1608,6 +1654,7 @@ ui.autoEvilKarmaToggle = createToggle(f_killer, "Auto Evil Karma", "autoEvilKarm
 
 -- NEW KILLER LOGIC: Disable Motor6D (attachments) before teleporting the hitbox to your right hand
 local disabledMotorMap = {} -- playerName -> { {motor6D, originalParent}, ... }
+local characterAddedConnections = {} -- playerName -> RBXScriptConnection
 
 local function getEffectiveTargetSet()
 local effective = {}
@@ -1625,9 +1672,18 @@ end
 local function restoreAllMotor6Ds(targetName)
 if disabledMotorMap[targetName] then
 for _, entry in ipairs(disabledMotorMap[targetName]) do
-pcall(function() entry[1].Parent = entry[2] end)
+pcall(function()
+if entry[1] and entry[1].Parent == nil then
+entry[1].Parent = entry[2]
+end
+end)
 end
 disabledMotorMap[targetName] = nil
+end
+-- Also disconnect CharacterAdded listener
+if characterAddedConnections[targetName] then
+pcall(function() characterAddedConnections[targetName]:Disconnect() end)
+characterAddedConnections[targetName] = nil
 end
 end
 
@@ -1636,13 +1692,32 @@ if disabledMotorMap[targetName] then return end -- already disabled
 disabledMotorMap[targetName] = {}
 local hrp = char:FindFirstChild("HumanoidRootPart")
 if not hrp then return end
+
+-- Safety: wrap in pcall
+pcall(function()
 for _, motor in ipairs(char:GetDescendants()) do
 if motor:IsA("Motor6D") and (motor.Name == "RootJoint" or motor.Name == "Root") then
 if motor.Part0 == hrp or motor.Part1 == hrp then
 table.insert(disabledMotorMap[targetName], {motor, motor.Parent})
-motor.Parent = nil -- Disable the Motor6D attachment
+motor.Parent = nil -- Disable before teleport
 end
 end
+end
+end)
+
+-- Auto re-apply on respawn (with safety)
+if not characterAddedConnections[targetName] then
+local conn = char:GetPropertyChangedSignal("Parent"):Connect(function()
+if char.Parent == nil then
+restoreAllMotor6Ds(targetName)
+task.wait(0.4)
+local newChar = Players:FindFirstChild(targetName) and Players[targetName].Character
+if newChar then
+disableMotor6DsForTarget(newChar, targetName)
+end
+end
+end)
+characterAddedConnections[targetName] = conn
 end
 end
 
@@ -1787,22 +1862,20 @@ end
 end
 end))
 table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
-local waterPart = workspace:FindFirstChild("underSea")
-if not waterPart or not waterPart:IsA("BasePart") then return end
-local waterY = waterPart.Position.Y
 while true do
-if not State.walkOnWater then
-if walkOnWaterPlatform then walkOnWaterPlatform:Destroy(); walkOnWaterPlatform = nil end
-task.wait(0.5); continue
-end
-if not walkOnWaterPlatform then
-walkOnWaterPlatform = Instance.new("Part"); walkOnWaterPlatform.Name = "ML_WalkOnWaterPlatform"
-walkOnWaterPlatform.Size = Vector3.new(10, 1, 10); walkOnWaterPlatform.Anchored = true; walkOnWaterPlatform.CanCollide = true; walkOnWaterPlatform.Transparency = 1; walkOnWaterPlatform.Parent = workspace
-local old = workspace:FindFirstChild("ML_WalkOnWaterPlatform"); if old and old ~= walkOnWaterPlatform then old:Destroy() end
-end
+task.wait(0.1)
+if not State.walkOnWater or State.stopEverything then continue end
+
 local char = player.Character
-if char and char:FindFirstChild("HumanoidRootPart") then walkOnWaterPlatform.CFrame = CFrame.new(char.HumanoidRootPart.Position.X, waterY, char.HumanoidRootPart.Position.Z) end
-task.wait(0.05)
+if not char then continue end
+local hrp = char:FindFirstChild("HumanoidRootPart")
+local hum = char:FindFirstChild("Humanoid")
+if not hrp or not hum then continue end
+
+-- Use upward velocity when below water level (lighter & more stable)
+if hrp.Position.Y < 4 then
+hrp.Velocity = Vector3.new(hrp.Velocity.X, 35, hrp.Velocity.Z)
+end
 end
 end))
 table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
