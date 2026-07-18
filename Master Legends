@@ -615,11 +615,16 @@ local function createToggle(parent, text, key, callback)
 end
 
 local function createConfirmPopup(message, onConfirm)
-    local popup = Instance.new("Frame", game:GetService("CoreGui"))
+    local popupGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    popupGui.Name = "ML_ConfirmPopup"
+    popupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    popupGui.ResetOnSpawn = false
+    local popup = Instance.new("Frame", popupGui)
     popup.Size = UDim2.fromOffset(280, 120)
     popup.Position = UDim2.new(0.5, -140, 0.5, -60)
     popup.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     popup.ZIndex = 100
+    popup.BorderSizePixel = 0
     Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 8)
     local label = Instance.new("TextLabel", popup)
     label.Size = UDim2.new(1, -20, 0, 50)
@@ -629,6 +634,8 @@ local function createConfirmPopup(message, onConfirm)
     label.TextWrapped = true
     label.BackgroundTransparency = 1
     label.ZIndex = 101
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 14
     local yesBtn = Instance.new("TextButton", popup)
     yesBtn.Size = UDim2.fromOffset(120, 35)
     yesBtn.Position = UDim2.fromOffset(10, 70)
@@ -636,7 +643,10 @@ local function createConfirmPopup(message, onConfirm)
     yesBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
     yesBtn.TextColor3 = Color3.new(1, 1, 1)
     yesBtn.ZIndex = 101
-    yesBtn.MouseButton1Click:Connect(function() popup:Destroy(); onConfirm(true) end)
+    yesBtn.Font = Enum.Font.GothamBold
+    yesBtn.TextSize = 14
+    Instance.new("UICorner", yesBtn).CornerRadius = UDim.new(0, 6)
+    yesBtn.MouseButton1Click:Connect(function() popupGui:Destroy(); onConfirm(true) end)
     local noBtn = Instance.new("TextButton", popup)
     noBtn.Size = UDim2.fromOffset(120, 35)
     noBtn.Position = UDim2.fromOffset(150, 70)
@@ -644,7 +654,10 @@ local function createConfirmPopup(message, onConfirm)
     noBtn.BackgroundColor3 = Color3.fromRGB(140, 0, 0)
     noBtn.TextColor3 = Color3.new(1, 1, 1)
     noBtn.ZIndex = 101
-    noBtn.MouseButton1Click:Connect(function() popup:Destroy(); onConfirm(false) end)
+    noBtn.Font = Enum.Font.GothamBold
+    noBtn.TextSize = 14
+    Instance.new("UICorner", noBtn).CornerRadius = UDim.new(0, 6)
+    noBtn.MouseButton1Click:Connect(function() popupGui:Destroy(); onConfirm(false) end)
 end
 
 local function createDropdown(parent, text, options, multi, callback, checkStateFunc, searchable)
@@ -1056,29 +1069,40 @@ end
 createRebirthConfirmToggle(f1, "Auto Rebirth Target", "autoRebirthTarget", "autoRebirthTarget", "autoRebirthInf", "autoRebirthInf")
 createRebirthConfirmToggle(f1, "Auto Rebirth Inf", "autoRebirthInf", "autoRebirthInf", "autoRebirthTarget", "autoRebirthTarget")
 
-createToggle(f1, "Auto Muscle King", "autoMuscleKing", function(val)
-    if val then
-        createConfirmPopup("Are you sure you want to enable Auto Muscle King?", function(confirmed)
-            if confirmed then
-                State.autoMuscleKing = true
-                State.lockedPos = nil
-                if ui.lockPosBtn and SetToggle[ui.lockPosBtn] then SetToggle[ui.lockPosBtn](false) end
-                if ui.toggleButtons["autoMuscleKing"] then SetToggle[ui.toggleButtons["autoMuscleKing"]](true) end
-            else
-                if ui.toggleButtons["autoMuscleKing"] then SetToggle[ui.toggleButtons["autoMuscleKing"]](false) end
-            end
-        end)
-        return false
-    else
-        State.autoMuscleKing = false
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = player.Character.HumanoidRootPart
-            hrp.AssemblyLinearVelocity = Vector3.zero
-            hrp.AssemblyAngularVelocity = Vector3.zero
-        end
-        return false
+do
+    local mkBtn = Instance.new("TextButton", f1)
+    mkBtn.Size = UDim2.new(1, -10, 0, 30)
+    mkBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    mkBtn.Text = "Auto Muscle King [OFF]"
+    mkBtn.TextColor3 = Color3.new(1, 1, 1)
+    ui.toggleButtons["autoMuscleKing"] = mkBtn
+    local mkState = false
+    SetToggle[mkBtn] = function(newState)
+        mkState = newState
+        mkBtn.Text = "Auto Muscle King" .. (mkState and " [ON]" or " [OFF]")
+        mkBtn.BackgroundColor3 = mkState and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
     end
-end)
+    mkBtn.MouseButton1Click:Connect(function()
+        if not mkState then
+            createConfirmPopup("Are you sure you want to enable Auto Muscle King?", function(confirmed)
+                if confirmed then
+                    State.autoMuscleKing = true
+                    State.lockedPos = nil
+                    if ui.lockPosBtn and SetToggle[ui.lockPosBtn] then SetToggle[ui.lockPosBtn](false) end
+                    SetToggle[mkBtn](true)
+                end
+            end)
+        else
+            State.autoMuscleKing = false
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end
+            SetToggle[mkBtn](false)
+        end
+    end)
+end
 
 createToggle(f1, "Auto Claim Gift", "autoClaim", function(v) State.autoClaim = v end)
 createToggle(f1, "Auto Punch", "autoPunch", function(v) State.autoPunch = v end)
@@ -1203,22 +1227,33 @@ ui.proteinEggIntervalDD = createDropdown(f2, "Protein Egg Interval", {"10 Minute
     if mins then State.proteinEggInterval = mins end
 end)
 
-createToggle(f2, "Auto Eat Protein Egg", "autoProteinEgg", function(val)
-    if val then
-        createConfirmPopup("Are you sure you want to enable Auto Eat Protein Egg?", function(confirmed)
-            if confirmed then
-                State.autoProteinEgg = true
-                if ui.toggleButtons["autoProteinEgg"] then SetToggle[ui.toggleButtons["autoProteinEgg"]](true) end
-            else
-                if ui.toggleButtons["autoProteinEgg"] then SetToggle[ui.toggleButtons["autoProteinEgg"]](false) end
-            end
-        end)
-        return false
-    else
-        State.autoProteinEgg = false
-        return false
+do
+    local proteinBtn = Instance.new("TextButton", f2)
+    proteinBtn.Size = UDim2.new(1, -10, 0, 30)
+    proteinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    proteinBtn.Text = "Auto Eat Protein Egg [OFF]"
+    proteinBtn.TextColor3 = Color3.new(1, 1, 1)
+    ui.toggleButtons["autoProteinEgg"] = proteinBtn
+    local proteinState = false
+    SetToggle[proteinBtn] = function(newState)
+        proteinState = newState
+        proteinBtn.Text = "Auto Eat Protein Egg" .. (proteinState and " [ON]" or " [OFF]")
+        proteinBtn.BackgroundColor3 = proteinState and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
     end
-end)
+    proteinBtn.MouseButton1Click:Connect(function()
+        if not proteinState then
+            createConfirmPopup("Are you sure you want to enable Auto Eat Protein Egg?", function(confirmed)
+                if confirmed then
+                    State.autoProteinEgg = true
+                    SetToggle[proteinBtn](true)
+                end
+            end)
+        else
+            State.autoProteinEgg = false
+            SetToggle[proteinBtn](false)
+        end
+    end)
+end
 
 ui.lockPosBtn = createToggle(f2, "Lock Position", "lockPosition", function(val)
     if State.autoMuscleKing and val then return false end
@@ -3105,4 +3140,4 @@ task.spawn(function()
         task.wait(1)
         if not getgenv().ML_Expert_UI or not getgenv().ML_Expert_UI.Parent then onUnload(); break end
     end
-end) 
+end)|
