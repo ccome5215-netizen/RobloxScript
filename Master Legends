@@ -826,7 +826,6 @@ local function createDropdown(parent, text, options, multi, callback, checkState
     refresh()
     return { refresh = refresh, setHeaderText = function(txt) headerBtn.Text = txt end, setValue = function(val) if not multi then headerBtn.Text = tostring(val) .. " v"; callback(val) end end }
 end
-end
 
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 ScreenGui.Name = "MuscleLegendsHub"
