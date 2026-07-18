@@ -746,6 +746,7 @@ local function createDropdown(parent, text, options, multi, callback, checkState
     headerBtn.ZIndex = 12
     headerBtn.AutoButtonColor = false
     headerBtn.Font = Enum.Font.Gotham
+    headerBtn.TextSize = 14
     local list = Instance.new("ScrollingFrame", container)
     list.Position = UDim2.fromOffset(0, 30)
     list.Visible = false
@@ -825,6 +826,7 @@ local function createDropdown(parent, text, options, multi, callback, checkState
     end)
     refresh()
     return { refresh = refresh, setHeaderText = function(txt) headerBtn.Text = txt end, setValue = function(val) if not multi then headerBtn.Text = tostring(val) .. " v"; callback(val) end end }
+end
 end
 
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
@@ -987,7 +989,7 @@ changelogTitle.TextXAlignment = Enum.TextXAlignment.Left
 local changelogText = Instance.new("TextLabel", f_changelog)
 changelogText.Size = UDim2.new(1, -20, 0, 300)
 changelogText.BackgroundTransparency = 1
-changelogText.Text = "Version 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
+changelogText.Text = "Version 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
 changelogText.TextColor3 = Color3.new(1, 1, 1)
 changelogText.Font = Enum.Font.Gotham
 changelogText.TextSize = 14
@@ -1594,6 +1596,29 @@ ui.trackToggle = createToggle(f3, "Track Stats", "trackStats", function(v)
     State.trackStats = v
     if v and not State.statsTarget then return false end
     if v then
+        local tp = Players:FindFirstChild(State.statsTarget)
+        if tp then
+            local petsF = tp:FindFirstChild("petsFolder")
+            if petsF then
+                for _, sub in ipairs(petsF:GetChildren()) do
+                    if sub.Name == "Basic" then refreshPetDropdown(sub, basicDD, petRefsBasic, State.statsTarget, false)
+                    elseif sub.Name == "Advanced" then refreshPetDropdown(sub, advDD, petRefsAdv, State.statsTarget, false)
+                    elseif sub.Name == "Rare" then refreshPetDropdown(sub, rareDD, petRefsRare, State.statsTarget, false)
+                    elseif sub.Name == "Epic" then refreshPetDropdown(sub, epicDD, petRefsEpic, State.statsTarget, false)
+                    elseif sub.Name == "Unique" then refreshPetDropdown(sub, uniqueDD, petRefsUnique, State.statsTarget, false) end
+                end
+            end
+            local powerUpsF = tp:FindFirstChild("powerUpsFolder")
+            if powerUpsF then
+                for _, sub in ipairs(powerUpsF:GetChildren()) do
+                    if sub.Name == "Basic" then refreshPetDropdown(sub, auraBasicDD, auraRefsBasic, State.statsTarget, true)
+                    elseif sub.Name == "Advanced" then refreshPetDropdown(sub, auraAdvDD, auraRefsAdv, State.statsTarget, true)
+                    elseif sub.Name == "Rare" then refreshPetDropdown(sub, auraRareDD, auraRefsRare, State.statsTarget, true)
+                    elseif sub.Name == "Epic" then refreshPetDropdown(sub, auraEpicDD, auraRefsEpic, State.statsTarget, true)
+                    elseif sub.Name == "Unique" then refreshPetDropdown(sub, auraUniqueDD, auraRefsUnique, State.statsTarget, true) end
+                end
+            end
+        end
     else
         clearPetAuraUI()
     end
@@ -3102,6 +3127,26 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
         if State.trackStats and State.statsTarget then
             local tp = Players:FindFirstChild(State.statsTarget)
             if tp then
+                local petsF = tp:FindFirstChild("petsFolder")
+                if petsF then
+                    for _, sub in ipairs(petsF:GetChildren()) do
+                        if sub.Name == "Basic" then refreshPetDropdown(sub, basicDD, petRefsBasic, State.statsTarget, false)
+                        elseif sub.Name == "Advanced" then refreshPetDropdown(sub, advDD, petRefsAdv, State.statsTarget, false)
+                        elseif sub.Name == "Rare" then refreshPetDropdown(sub, rareDD, petRefsRare, State.statsTarget, false)
+                        elseif sub.Name == "Epic" then refreshPetDropdown(sub, epicDD, petRefsEpic, State.statsTarget, false)
+                        elseif sub.Name == "Unique" then refreshPetDropdown(sub, uniqueDD, petRefsUnique, State.statsTarget, false) end
+                    end
+                end
+                local powerUpsF = tp:FindFirstChild("powerUpsFolder")
+                if powerUpsF then
+                    for _, sub in ipairs(powerUpsF:GetChildren()) do
+                        if sub.Name == "Basic" then refreshPetDropdown(sub, auraBasicDD, auraRefsBasic, State.statsTarget, true)
+                        elseif sub.Name == "Advanced" then refreshPetDropdown(sub, auraAdvDD, auraRefsAdv, State.statsTarget, true)
+                        elseif sub.Name == "Rare" then refreshPetDropdown(sub, auraRareDD, auraRefsRare, State.statsTarget, true)
+                        elseif sub.Name == "Epic" then refreshPetDropdown(sub, auraEpicDD, auraRefsEpic, State.statsTarget, true)
+                        elseif sub.Name == "Unique" then refreshPetDropdown(sub, auraUniqueDD, auraRefsUnique, State.statsTarget, true) end
+                    end
+                end
                 local ls = tp:FindFirstChild("leaderstats")
                 for s, label in pairs(statsDisp) do
                     local rawVal, isBool = 0, false
