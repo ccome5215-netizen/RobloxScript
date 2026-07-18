@@ -3108,7 +3108,7 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
         if State.autoPunch and not State.isTransitioning then
             local equippedTool = char:FindFirstChildOfClass("Tool")
             if equippedTool and equippedTool.Name == "Punch" then pcall(function() equippedTool:Activate() end) end
-        endend
+        end
     end
 end))
 
@@ -3140,4 +3140,4 @@ task.spawn(function()
         task.wait(1)
         if not getgenv().ML_Expert_UI or not getgenv().ML_Expert_UI.Parent then onUnload(); break end
     end
-end)|
+end)
