@@ -9,6 +9,7 @@ local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
+local SCRIPT_VERSION = "1.07"
 
 local player = Players.LocalPlayer
 local oldUI = getgenv().ML_Expert_UI
@@ -202,6 +203,78 @@ end
 
 while not keyValidated do task.wait() end
 
+
+-- Auto Update System
+local function checkForUpdate()
+    local success, remoteScript = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/ccome5215-netizen/RobloxScript/refs/heads/main/Master%20Legends")
+    end)
+    if success and remoteScript then
+        local remoteVersion = remoteScript:match('local%s+SCRIPT_VERSION%s*=%s*"([^"]+)"')
+        if remoteVersion and remoteVersion ~= SCRIPT_VERSION then
+            local updateGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+            updateGui.Name = "ML_UpdateGui"
+            updateGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            updateGui.ResetOnSpawn = false
+
+            local frame = Instance.new("Frame", updateGui)
+            frame.Size = UDim2.fromOffset(320, 160)
+            frame.Position = UDim2.new(0.5, -160, 0.5, -80)
+            frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            frame.BorderSizePixel = 0
+            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+            local title = Instance.new("TextLabel", frame)
+            title.Size = UDim2.new(1, 0, 0, 40)
+            title.Position = UDim2.fromOffset(0, 10)
+            title.BackgroundTransparency = 1
+            title.Text = "New Update Required"
+            title.TextColor3 = Color3.fromRGB(255, 50, 50)
+            title.Font = Enum.Font.GothamBold
+            title.TextSize = 20
+
+            local loadingLabel = Instance.new("TextLabel", frame)
+            loadingLabel.Size = UDim2.new(1, 0, 0, 30)
+            loadingLabel.Position = UDim2.fromOffset(0, 55)
+            loadingLabel.BackgroundTransparency = 1
+            loadingLabel.Text = "Loading..."
+            loadingLabel.TextColor3 = Color3.new(1, 1, 1)
+            loadingLabel.Font = Enum.Font.GothamBold
+            loadingLabel.TextSize = 16
+
+            local timeLabel = Instance.new("TextLabel", frame)
+            timeLabel.Size = UDim2.new(1, 0, 0, 25)
+            timeLabel.Position = UDim2.fromOffset(0, 90)
+            timeLabel.BackgroundTransparency = 1
+            timeLabel.Text = "Remaining Time: (3 Seconds)"
+            timeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+            timeLabel.Font = Enum.Font.Gotham
+            timeLabel.TextSize = 14
+
+            task.spawn(function()
+                local dots = 0
+                while updateGui.Parent do
+                    dots = (dots + 1) % 4
+                    loadingLabel.Text = "Loading" .. string.rep(".", dots)
+                    task.wait(0.4)
+                end
+            end)
+
+            for i = 3, 1, -1 do
+                timeLabel.Text = "Remaining Time: (" .. i .. " Seconds)"
+                task.wait(1)
+            end
+
+            updateGui:Destroy()
+            loadstring(remoteScript)()
+            return true
+        end
+    end
+    return false
+end
+
+if checkForUpdate() then return end
+
 if oldLoops then
     for _, loop in ipairs(oldLoops) do
         if type(loop) == "thread" then pcall(task.cancel, loop)
@@ -246,6 +319,7 @@ local State = {
     statsTarget = nil, trackStats = false, viewing = false, withoutFormatNum = false, autoFortuneWheel = false,
     currentPetLabel = nil, currentPetTable = nil, currentAuraLabel = nil, currentAuraTable = nil,
     lessLag = false, selectedMap = nil, selectedGym = nil, autoGym = false, autoGymThread = nil,
+    teleportActive = false, teleportActiveEnd = 0,
     selectedPetCrystal = nil, selectedPetCrystalData = nil, selectedAuraCrystal = nil, selectedAuraCrystalData = nil,
     autoPetBuy = false, autoPetBuyThread = nil, autoAuraBuy = false, autoAuraBuyThread = nil,
     autoUnequipBoosts = false, stopEverything = false, walkOnWater = true,
@@ -664,16 +738,14 @@ local function createDropdown(parent, text, options, multi, callback, checkState
     local container = Instance.new("Frame", parent)
     container.Size = UDim2.new(1, -10, 0, 30)
     container.BackgroundTransparency = 1
-    local headerText = Instance.new("TextLabel", container)
-    headerText.Size = UDim2.new(1, 0, 0, 30)
-    headerText.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    headerText.Text = text .. " v"
-    headerText.TextColor3 = Color3.new(1, 1, 1)
-    headerText.Active = true
     local headerBtn = Instance.new("TextButton", container)
     headerBtn.Size = UDim2.new(1, 0, 0, 30)
-    headerBtn.BackgroundTransparency = 1
+    headerBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    headerBtn.Text = text .. " v"
+    headerBtn.TextColor3 = Color3.new(1, 1, 1)
     headerBtn.ZIndex = 12
+    headerBtn.AutoButtonColor = false
+    headerBtn.Font = Enum.Font.Gotham
     local list = Instance.new("ScrollingFrame", container)
     list.Position = UDim2.fromOffset(0, 30)
     list.Visible = false
@@ -718,7 +790,7 @@ local function createDropdown(parent, text, options, multi, callback, checkState
                 end
                 o.MouseButton1Click:Connect(function()
                     if not multi then
-                        headerText.Text = optStr .. " v"
+                        headerBtn.Text = optStr .. " v"
                         list.Visible = false
                         if searchBox then searchBox.Visible = false end
                         container.Size = UDim2.new(1, -10, 0, 30)
@@ -752,7 +824,8 @@ local function createDropdown(parent, text, options, multi, callback, checkState
         if list.Visible then refresh() end
     end)
     refresh()
-    return { refresh = refresh, setHeaderText = function(txt) headerText.Text = txt end, setValue = function(val) if not multi then headerText.Text = tostring(val) .. " v"; callback(val) end end }
+    return { refresh = refresh, setHeaderText = function(txt) headerBtn.Text = txt end, setValue = function(val) if not multi then headerBtn.Text = tostring(val) .. " v"; callback(val) end end }
+end
 end
 
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
@@ -2218,6 +2291,7 @@ local teleportList = {
     {name = "Safe Spot", pos = Vector3.new(218.5, 41.1, -8129.3)}, 
     {name = "Tiny Island", pos = Vector3.new(-33.6, 7.4, 1892.8)},
     {name = "Beach", pos = Vector3.new(4.4, 7.3, 132.8)}, 
+    {name = "Legend Beach", pos = Vector3.new(-11.400389, 18.381247, -366.232300)},
     {name = "Frozen Island", pos = Vector3.new(-2623.0, 7.3, -409.0)},
     {name = "Mystic Island", pos = Vector3.new(2250.7, 7.3, 1073.2)}, 
     {name = "Inferno Island", pos = Vector3.new(-6758.9, 7.3, -1284.9)},
@@ -2233,6 +2307,8 @@ for _, tpData in ipairs(teleportList) do
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.MouseButton1Click:Connect(function() 
+        State.teleportActive = true
+        State.teleportActiveEnd = tick() + 2
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") then char.HumanoidRootPart.CFrame = CFrame.new(tpData.pos) end 
     end)
@@ -2821,7 +2897,8 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
     while true do
         if State.lessLag then task.wait(0.1) else RunService.Heartbeat:Wait() end
         if State.stopEverything then continue end
-        if State.godMode then pcall(function() ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl") end) end
+        local cframeFeaturesActive = State.autoMuscleKing or State.lockedPos ~= nil or (State.teleportActive and tick() < State.teleportActiveEnd)
+        if State.godMode and not cframeFeaturesActive then pcall(function() ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl") end) end
         if State.autoSize then pcall(function() ReplicatedStorage.rEvents.changeSpeedSizeRemote:InvokeServer("changeSize", tonumber(Config.SizeValue) or 1) end) end
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
