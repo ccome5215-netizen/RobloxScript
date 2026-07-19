@@ -9,7 +9,7 @@ local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
-local SCRIPT_VERSION = "1.07"
+local SCRIPT_VERSION = "1.08"
 
 local player = Players.LocalPlayer
 local oldUI = getgenv().ML_Expert_UI
@@ -988,7 +988,7 @@ changelogTitle.TextXAlignment = Enum.TextXAlignment.Left
 local changelogText = Instance.new("TextLabel", f_changelog)
 changelogText.Size = UDim2.new(1, -20, 0, 300)
 changelogText.BackgroundTransparency = 1
-changelogText.Text = "Version 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
+changelogText.Text = "Version 1.08\n- Added Manual Refresh\nNote:This is only for Pets And Auras Dropdown in stats tab\nother things are auto refresh.\n- Pets And Auras dropdown in stats tab no longer live updates.\nVersion 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
 changelogText.TextColor3 = Color3.new(1, 1, 1)
 changelogText.Font = Enum.Font.Gotham
 changelogText.TextSize = 14
@@ -1512,7 +1512,7 @@ local function refreshPetDropdown(folder, dropdownObj, refStore, playerName, isA
         else
             if not State.initialPets[playerName][item] then isNew = "Yes" end
         end
-        local cleanName = baseName .. " Level:" .. state.level .. " XP:" .. state.exp .. " Evolved:" .. tostring(state.evolved) .. " NEW?:" .. isNew
+        local cleanName = baseName .. " Level:" .. state.level .. " XP:" .. state.exp .. " Evolved:" .. tostring(state.evolved)
         table.insert(options, cleanName)
         itemRefs[cleanName] = item
     end
@@ -1541,6 +1541,18 @@ local function clearPetAuraUI()
     State.currentPetLabel, State.currentPetTable, State.currentAuraLabel, State.currentAuraTable = nil, nil, nil, nil
     if petDetails then petDetails.Text = "Select a Pet to view stats" end
     if auraDetails then auraDetails.Text = "Select an Aura to view stats" end
+    if ultList then ultList.Text = "None" end
+    if gpList then gpList.Text = "None" end
+    basicDD.refresh({"Nothing Here"})
+    advDD.refresh({"Nothing Here"})
+    rareDD.refresh({"Nothing Here"})
+    epicDD.refresh({"Nothing Here"})
+    uniqueDD.refresh({"Nothing Here"})
+    auraBasicDD.refresh({"Nothing Here"})
+    auraAdvDD.refresh({"Nothing Here"})
+    auraRareDD.refresh({"Nothing Here"})
+    auraEpicDD.refresh({"Nothing Here"})
+    auraUniqueDD.refresh({"Nothing Here"})
 end
 
 local function resetStatsUI()
@@ -1622,6 +1634,48 @@ ui.trackToggle = createToggle(f3, "Track Stats", "trackStats", function(v)
         clearPetAuraUI()
     end
     return v
+end)
+
+local manualRefreshBtn = Instance.new("TextButton", f3)
+manualRefreshBtn.Size = UDim2.new(1, -10, 0, 35)
+manualRefreshBtn.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
+manualRefreshBtn.Text = "Manual Refresh (Pets & Auras)"
+manualRefreshBtn.TextColor3 = Color3.new(1, 1, 1)
+manualRefreshBtn.Font = Enum.Font.GothamBold
+manualRefreshBtn.TextSize = 14
+Instance.new("UICorner", manualRefreshBtn).CornerRadius = UDim.new(0, 6)
+manualRefreshBtn.MouseButton1Click:Connect(function()
+    if not State.trackStats or not State.statsTarget then return end
+    local tp = Players:FindFirstChild(State.statsTarget)
+    if not tp then return end
+    local petsF = tp:FindFirstChild("petsFolder")
+    if petsF then
+        for _, sub in ipairs(petsF:GetChildren()) do
+            if sub.Name == "Basic" then refreshPetDropdown(sub, basicDD, petRefsBasic, State.statsTarget, false)
+            elseif sub.Name == "Advanced" then refreshPetDropdown(sub, advDD, petRefsAdv, State.statsTarget, false)
+            elseif sub.Name == "Rare" then refreshPetDropdown(sub, rareDD, petRefsRare, State.statsTarget, false)
+            elseif sub.Name == "Epic" then refreshPetDropdown(sub, epicDD, petRefsEpic, State.statsTarget, false)
+            elseif sub.Name == "Unique" then refreshPetDropdown(sub, uniqueDD, petRefsUnique, State.statsTarget, false) end
+        end
+    end
+    local powerUpsF = tp:FindFirstChild("powerUpsFolder")
+    if powerUpsF then
+        for _, sub in ipairs(powerUpsF:GetChildren()) do
+            if sub.Name == "Basic" then refreshPetDropdown(sub, auraBasicDD, auraRefsBasic, State.statsTarget, true)
+            elseif sub.Name == "Advanced" then refreshPetDropdown(sub, auraAdvDD, auraRefsAdv, State.statsTarget, true)
+            elseif sub.Name == "Rare" then refreshPetDropdown(sub, auraRareDD, auraRefsRare, State.statsTarget, true)
+            elseif sub.Name == "Epic" then refreshPetDropdown(sub, auraEpicDD, auraRefsEpic, State.statsTarget, true)
+            elseif sub.Name == "Unique" then refreshPetDropdown(sub, auraUniqueDD, auraRefsUnique, State.statsTarget, true) end
+        end
+    end
+    if State.currentPetLabel then
+        local petList = State.currentPetTable == "Basic" and petRefsBasic or State.currentPetTable == "Advanced" and petRefsAdv or State.currentPetTable == "Rare" and petRefsRare or State.currentPetTable == "Epic" and petRefsEpic or petRefsUnique
+        handleItemSelection(State.currentPetLabel, petList, petDetails)
+    end
+    if State.currentAuraLabel then
+        local auraList = State.currentAuraTable == "Basic" and auraRefsBasic or State.currentAuraTable == "Advanced" and auraRefsAdv or State.currentAuraTable == "Rare" and auraRefsRare or State.currentAuraTable == "Epic" and auraRefsEpic or auraRefsUnique
+        handleItemSelection(State.currentAuraLabel, auraList, auraDetails)
+    end
 end)
 
 createToggle(f3, "Without Format Number", "withoutFormatNum", function(v) State.withoutFormatNum = v end)
@@ -3126,26 +3180,6 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
         if State.trackStats and State.statsTarget then
             local tp = Players:FindFirstChild(State.statsTarget)
             if tp then
-                local petsF = tp:FindFirstChild("petsFolder")
-                if petsF then
-                    for _, sub in ipairs(petsF:GetChildren()) do
-                        if sub.Name == "Basic" then refreshPetDropdown(sub, basicDD, petRefsBasic, State.statsTarget, false)
-                        elseif sub.Name == "Advanced" then refreshPetDropdown(sub, advDD, petRefsAdv, State.statsTarget, false)
-                        elseif sub.Name == "Rare" then refreshPetDropdown(sub, rareDD, petRefsRare, State.statsTarget, false)
-                        elseif sub.Name == "Epic" then refreshPetDropdown(sub, epicDD, petRefsEpic, State.statsTarget, false)
-                        elseif sub.Name == "Unique" then refreshPetDropdown(sub, uniqueDD, petRefsUnique, State.statsTarget, false) end
-                    end
-                end
-                local powerUpsF = tp:FindFirstChild("powerUpsFolder")
-                if powerUpsF then
-                    for _, sub in ipairs(powerUpsF:GetChildren()) do
-                        if sub.Name == "Basic" then refreshPetDropdown(sub, auraBasicDD, auraRefsBasic, State.statsTarget, true)
-                        elseif sub.Name == "Advanced" then refreshPetDropdown(sub, auraAdvDD, auraRefsAdv, State.statsTarget, true)
-                        elseif sub.Name == "Rare" then refreshPetDropdown(sub, auraRareDD, auraRefsRare, State.statsTarget, true)
-                        elseif sub.Name == "Epic" then refreshPetDropdown(sub, auraEpicDD, auraRefsEpic, State.statsTarget, true)
-                        elseif sub.Name == "Unique" then refreshPetDropdown(sub, auraUniqueDD, auraRefsUnique, State.statsTarget, true) end
-                    end
-                end
                 local ls = tp:FindFirstChild("leaderstats")
                 for s, label in pairs(statsDisp) do
                     local rawVal, isBool = 0, false
@@ -3175,14 +3209,7 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
                         label.Text = s .. ": " .. formatNum(current) .. (s == "Rebirth Multiplier" and "%" or "") .. gainStr
                     else label.Text = s .. ": " .. tostring(rawVal) end
                 end
-                if State.currentPetLabel then
-                    local petList = State.currentPetTable == "Basic" and petRefsBasic or State.currentPetTable == "Advanced" and petRefsAdv or State.currentPetTable == "Rare" and petRefsRare or State.currentPetTable == "Epic" and petRefsEpic or petRefsUnique
-                    handleItemSelection(State.currentPetLabel, petList, petDetails)
-                end
-                if State.currentAuraLabel then
-                    local auraList = State.currentAuraTable == "Basic" and auraRefsBasic or State.currentAuraTable == "Advanced" and auraRefsAdv or State.currentAuraTable == "Rare" and auraRefsRare or State.currentAuraTable == "Epic" and auraRefsEpic or auraRefsUnique
-                    handleItemSelection(State.currentAuraLabel, auraList, auraDetails)
-                end
+
                 local uStr, ultF = "", tp:FindFirstChild("ultimatesFolder")
                 if ultF then for _, u in ipairs(ultF:GetChildren()) do uStr = uStr .. u.Name .. ": " .. formatNum(u.Value) .. "\n" end end
                 ultList.Text = uStr == "" and "None" or uStr
@@ -3190,7 +3217,11 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
                 if opF then for _, g in ipairs(opF:GetChildren()) do gpStr = gpStr .. g.Name .. "\n" end end
                 gpList.Text = gpStr == "" and "None" or gpStr
             else resetStatsUI() end
-        else for s, label in pairs(statsDisp) do label.Text = s .. ": None" end end
+        else 
+            for s, label in pairs(statsDisp) do label.Text = s .. ": None" end 
+            if ultList then ultList.Text = "None" end
+            if gpList then gpList.Text = "None" end
+        end
     end
 end))
 
