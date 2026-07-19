@@ -1902,8 +1902,7 @@ inventoryDetailsLabel.BackgroundTransparency = 1
 inventoryDetailsLabel.TextColor3 = Color3.new(1, 1, 1)
 inventoryDetailsLabel.TextXAlignment = Enum.TextXAlignment.Left
 inventoryDetailsLabel.TextYAlignment = Enum.TextYAlignment.Top
-inventoryDetailsLabel.Text = "--- INVENTORY ---
-Nothing Here"
+inventoryDetailsLabel.Text = "--- INVENTORY ---"
 inventoryDetailsLabel.TextWrapped = true
 inventoryDetailsLabel.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -2140,25 +2139,38 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     end
     if #options == 0 then table.insert(options, "Nothing available") end
 
+    -- Forward-declare so the dropdown callback can close over them
+    local infoLabel, imageLabel
+
     local dropdownText = title:find("PETS") and "Pet Dropdown" or "Aura Dropdown"
     local dropdown = createDropdown(parent, dropdownText, options, false, function(display)
         if display == "Nothing available" then 
             State[stateKeyData], State[stateKeyName] = nil, nil
-            infoLabel.Text = "Select an item to view details\nCost: N/A"
-            imageLabel.Image = ""
-            imageLabel.ImageColor3 = Color3.new(1, 1, 1)
+            if infoLabel then
+                infoLabel.Text = "Select an item to view details\nCost: N/A"
+            end
+            if imageLabel then
+                imageLabel.Image = ""
+                imageLabel.ImageColor3 = Color3.new(1, 1, 1)
+            end
         else
             local data = optionToData[display]
             if data then
                 State[stateKeyName], State[stateKeyData] = display, data
-                infoLabel.Text = "Name: " .. data.name .. "\nCost: " .. formatNum(data.cost) .. " " .. data.costType .. "\nRarity: " .. data.rarity
-                imageLabel.Image = data.imageId ~= "" and data.imageId or ""
-                imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
+                if infoLabel then
+                    infoLabel.Text = "Name: " .. data.name .. "\nCost: " .. formatNum(data.cost) .. " " .. data.costType .. "\nRarity: " .. data.rarity
+                end
+                if imageLabel then
+                    imageLabel.Image = data.imageId ~= "" and data.imageId or ""
+                    imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
+                end
             end
         end
     end, nil, true)
 
-    local infoLabel = Instance.new("TextLabel", parent)
+    -- Now create the labels AFTER the dropdown so UIListLayout order is correct:
+    -- title → dropdown → details → image → Buy → Auto Buy
+    infoLabel = Instance.new("TextLabel", parent)
     infoLabel.Size = UDim2.new(1, -10, 0, 70)
     infoLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     infoLabel.Text = "Select an item to view details\nCost: N/A"
@@ -2170,7 +2182,7 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     infoLabel.TextYAlignment = Enum.TextYAlignment.Top
     Instance.new("UICorner", infoLabel).CornerRadius = UDim.new(0, 8)
 
-    local imageLabel = Instance.new("ImageLabel", parent)
+    imageLabel = Instance.new("ImageLabel", parent)
     imageLabel.Size = UDim2.new(1, -10, 0, 80)
     imageLabel.BackgroundTransparency = 1
     imageLabel.ScaleType = Enum.ScaleType.Fit
