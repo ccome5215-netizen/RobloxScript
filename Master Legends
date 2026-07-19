@@ -2122,10 +2122,6 @@ end
 
 scanCrystalShop()
 
-local function evolveByName(itemName) 
-    if itemName then pcall(function() ReplicatedStorage.rEvents.petEvolveEvent:FireServer(itemName) end) end 
-end
-
 local function createCrystalSection(parent, title, list, stateKeyData, stateKeyName, startAutoFunc, stopAutoFunc)
     local titleLabel = Instance.new("TextLabel", parent)
     titleLabel.Size = UDim2.new(1, -10, 0, 25)
@@ -2144,20 +2140,18 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     end
     if #options == 0 then table.insert(options, "Nothing available") end
 
-    local dropdown = createDropdown(parent, title .. " Dropdown", options, false, function(display)
+    local dropdownText = title:find("PETS") and "Pet Dropdown" or "Aura Dropdown"
+    local dropdown = createDropdown(parent, dropdownText, options, false, function(display)
         if display == "Nothing available" then 
             State[stateKeyData], State[stateKeyName] = nil, nil
-            infoLabel.Text = "Select an item to view details
-Cost: N/A"
+            infoLabel.Text = "Select an item to view details\nCost: N/A"
             imageLabel.Image = ""
             imageLabel.ImageColor3 = Color3.new(1, 1, 1)
         else
             local data = optionToData[display]
             if data then
                 State[stateKeyName], State[stateKeyData] = display, data
-                infoLabel.Text = "Name: " .. data.name .. "
-Cost: " .. formatNum(data.cost) .. " " .. data.costType .. "
-Rarity: " .. data.rarity
+                infoLabel.Text = "Name: " .. data.name .. "\nCost: " .. formatNum(data.cost) .. " " .. data.costType .. "\nRarity: " .. data.rarity
                 imageLabel.Image = data.imageId ~= "" and data.imageId or ""
                 imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
             end
@@ -2167,8 +2161,7 @@ Rarity: " .. data.rarity
     local infoLabel = Instance.new("TextLabel", parent)
     infoLabel.Size = UDim2.new(1, -10, 0, 70)
     infoLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    infoLabel.Text = "Select an item to view details
-Cost: N/A"
+    infoLabel.Text = "Select an item to view details\nCost: N/A"
     infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     infoLabel.Font = Enum.Font.Gotham
     infoLabel.TextSize = 11
@@ -2191,16 +2184,6 @@ Cost: N/A"
     buyBtn.MouseButton1Click:Connect(function() 
         local data = State[stateKeyData]
         if data then fireBuyCrystal(data) end 
-    end)
-
-    local buy5Btn = Instance.new("TextButton", parent)
-    buy5Btn.Size = UDim2.new(1, -10, 0, 35)
-    buy5Btn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
-    buy5Btn.Text = "Buy 5"
-    buy5Btn.TextColor3 = Color3.new(1, 1, 1)
-    buy5Btn.MouseButton1Click:Connect(function() 
-        local data = State[stateKeyData]
-        if data then for _ = 1, 5 do fireBuyCrystal(data) end end 
     end)
 
     createToggle(parent, "Auto Buy", nil, function(on) 
