@@ -9,7 +9,7 @@ local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
-local SCRIPT_VERSION = "1.09"
+local SCRIPT_VERSION = "1.10"
 
 local player = Players.LocalPlayer
 local oldUI = getgenv().ML_Expert_UI
@@ -1902,7 +1902,8 @@ inventoryDetailsLabel.BackgroundTransparency = 1
 inventoryDetailsLabel.TextColor3 = Color3.new(1, 1, 1)
 inventoryDetailsLabel.TextXAlignment = Enum.TextXAlignment.Left
 inventoryDetailsLabel.TextYAlignment = Enum.TextYAlignment.Top
-inventoryDetailsLabel.Text = "--- INVENTORY ---"
+inventoryDetailsLabel.Text = "--- INVENTORY ---
+Nothing Here"
 inventoryDetailsLabel.TextWrapped = true
 inventoryDetailsLabel.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -2121,6 +2122,10 @@ end
 
 scanCrystalShop()
 
+local function evolveByName(itemName) 
+    if itemName then pcall(function() ReplicatedStorage.rEvents.petEvolveEvent:FireServer(itemName) end) end 
+end
+
 local function createCrystalSection(parent, title, list, stateKeyData, stateKeyName, startAutoFunc, stopAutoFunc)
     local titleLabel = Instance.new("TextLabel", parent)
     titleLabel.Size = UDim2.new(1, -10, 0, 25)
@@ -2139,41 +2144,31 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     end
     if #options == 0 then table.insert(options, "Nothing available") end
 
-    -- Forward-declare so the dropdown callback can close over them
-    local infoLabel, imageLabel
-
-    local dropdownText = title:find("PETS") and "Pet Dropdown" or "Aura Dropdown"
-    local dropdown = createDropdown(parent, dropdownText, options, false, function(display)
+    local dropdown = createDropdown(parent, title .. " Dropdown", options, false, function(display)
         if display == "Nothing available" then 
             State[stateKeyData], State[stateKeyName] = nil, nil
-            if infoLabel then
-                infoLabel.Text = "Select an item to view details\nCost: N/A"
-            end
-            if imageLabel then
-                imageLabel.Image = ""
-                imageLabel.ImageColor3 = Color3.new(1, 1, 1)
-            end
+            infoLabel.Text = "Select an item to view details
+Cost: N/A"
+            imageLabel.Image = ""
+            imageLabel.ImageColor3 = Color3.new(1, 1, 1)
         else
             local data = optionToData[display]
             if data then
                 State[stateKeyName], State[stateKeyData] = display, data
-                if infoLabel then
-                    infoLabel.Text = "Name: " .. data.name .. "\nCost: " .. formatNum(data.cost) .. " " .. data.costType .. "\nRarity: " .. data.rarity
-                end
-                if imageLabel then
-                    imageLabel.Image = data.imageId ~= "" and data.imageId or ""
-                    imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
-                end
+                infoLabel.Text = "Name: " .. data.name .. "
+Cost: " .. formatNum(data.cost) .. " " .. data.costType .. "
+Rarity: " .. data.rarity
+                imageLabel.Image = data.imageId ~= "" and data.imageId or ""
+                imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
             end
         end
     end, nil, true)
 
-    -- Now create the labels AFTER the dropdown so UIListLayout order is correct:
-    -- title → dropdown → details → image → Buy → Auto Buy
-    infoLabel = Instance.new("TextLabel", parent)
+    local infoLabel = Instance.new("TextLabel", parent)
     infoLabel.Size = UDim2.new(1, -10, 0, 70)
     infoLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    infoLabel.Text = "Select an item to view details\nCost: N/A"
+    infoLabel.Text = "Select an item to view details
+Cost: N/A"
     infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     infoLabel.Font = Enum.Font.Gotham
     infoLabel.TextSize = 11
@@ -2182,7 +2177,7 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     infoLabel.TextYAlignment = Enum.TextYAlignment.Top
     Instance.new("UICorner", infoLabel).CornerRadius = UDim.new(0, 8)
 
-    imageLabel = Instance.new("ImageLabel", parent)
+    local imageLabel = Instance.new("ImageLabel", parent)
     imageLabel.Size = UDim2.new(1, -10, 0, 80)
     imageLabel.BackgroundTransparency = 1
     imageLabel.ScaleType = Enum.ScaleType.Fit
@@ -2196,6 +2191,16 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     buyBtn.MouseButton1Click:Connect(function() 
         local data = State[stateKeyData]
         if data then fireBuyCrystal(data) end 
+    end)
+
+    local buy5Btn = Instance.new("TextButton", parent)
+    buy5Btn.Size = UDim2.new(1, -10, 0, 35)
+    buy5Btn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
+    buy5Btn.Text = "Buy 5"
+    buy5Btn.TextColor3 = Color3.new(1, 1, 1)
+    buy5Btn.MouseButton1Click:Connect(function() 
+        local data = State[stateKeyData]
+        if data then for _ = 1, 5 do fireBuyCrystal(data) end end 
     end)
 
     createToggle(parent, "Auto Buy", nil, function(on) 
@@ -2897,7 +2902,7 @@ refreshKillerDropdowns()
 table.insert(getgenv().ML_Expert_Loops, RunService.Heartbeat:Connect(function()
     if State.stopEverything then return end
     if State.autoMuscleKing and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.CFrame = CFrame.new(-8761.7, 494.2, -5858.2)
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(-8973.870117, 11.181785, -6071.764160)
     elseif State.lockedPos and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         player.Character.HumanoidRootPart.CFrame = State.lockedPos
     end
