@@ -1877,13 +1877,33 @@ auraStorageLabel.Text = "--- AURA STORAGE ---\nNothing Here"
 auraStorageLabel.TextWrapped = true
 auraStorageLabel.AutomaticSize = Enum.AutomaticSize.Y
 
+local petEquipHeader = Instance.new("TextLabel", f3)
+petEquipHeader.Size = UDim2.new(1, -10, 0, 25)
+petEquipHeader.Text = "--- PET EQUIPPED ---"
+petEquipHeader.BackgroundTransparency = 1
+petEquipHeader.TextColor3 = Color3.fromRGB(0, 255, 150)
+petEquipHeader.Font = Enum.Font.SourceSansBold
+petEquipHeader.TextSize = 18
+petEquipHeader.TextXAlignment = Enum.TextXAlignment.Left
+
+local petEquipLabel = Instance.new("TextLabel", f3)
+petEquipLabel.Size = UDim2.new(1, -10, 0, 100)
+petEquipLabel.BackgroundTransparency = 1
+petEquipLabel.TextColor3 = Color3.new(1, 1, 1)
+petEquipLabel.TextXAlignment = Enum.TextXAlignment.Left
+petEquipLabel.TextYAlignment = Enum.TextYAlignment.Top
+petEquipLabel.Text = "None"
+petEquipLabel.TextWrapped = true
+petEquipLabel.AutomaticSize = Enum.AutomaticSize.Y
+
 local inventoryDetailsLabel = Instance.new("TextLabel", f3)
 inventoryDetailsLabel.Size = UDim2.new(1, -10, 0, 150)
 inventoryDetailsLabel.BackgroundTransparency = 1
 inventoryDetailsLabel.TextColor3 = Color3.new(1, 1, 1)
 inventoryDetailsLabel.TextXAlignment = Enum.TextXAlignment.Left
 inventoryDetailsLabel.TextYAlignment = Enum.TextYAlignment.Top
-inventoryDetailsLabel.Text = "--- INVENTORY ---\nNothing Here"
+inventoryDetailsLabel.Text = "--- INVENTORY ---
+Nothing Here"
 inventoryDetailsLabel.TextWrapped = true
 inventoryDetailsLabel.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -1897,7 +1917,7 @@ local function updateInventoryDetails()
     local bp = targetPlayer:FindFirstChild("Backpack")
     if bp then
         for _, item in ipairs(bp:GetChildren()) do
-            if item:IsA("Tool") then
+            if item:IsA("Tool") and item.Name ~= "Weight" and item.Name ~= "Pushups" and item.Name ~= "Situps" and item.Name ~= "Handstands" and item.Name ~= "Punch" and item.Name ~= "Ground Slam" and item.Name ~= "Stomp" then
                 local name = item.Name
                 itemCounts[name] = (itemCounts[name] or 0) + 1
             end
@@ -2083,7 +2103,10 @@ local function scanCrystalShop()
         local cost = 0
         if priceFolder:IsA("NumberValue") or priceFolder:IsA("IntValue") then cost = priceFolder.Value end
         local costType = priceTypeObj and priceTypeObj:IsA("StringValue") and priceTypeObj.Value or ""
-        local data = { name = child.Name, imageId = imageId, rarity = rarity, cost = cost, costType = costType, folderChild = child }
+        local powerUpColor = Color3.new(1, 1, 1)
+        local colorObj = child:FindFirstChild("powerUpColor")
+        if colorObj and colorObj:IsA("Color3Value") then powerUpColor = colorObj.Value end
+        local data = { name = child.Name, imageId = imageId, rarity = rarity, cost = cost, costType = costType, folderChild = child, powerUpColor = powerUpColor }
         if child:FindFirstChild("isPowerUp") then table.insert(auras, data) else table.insert(pets, data) end
     end
     local rarityOrder = {["Basic"] = 1, ["Advanced"] = 2, ["Rare"] = 3, ["Epic"] = 4, ["Unique"] = 5}
@@ -2112,7 +2135,7 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextSize = 14
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
+
     local options, optionToData = {}, {}
     for _, data in ipairs(list) do 
         local display = data.name .. " | Cost: " .. formatNum(data.cost) .. " | Rarity: " .. data.rarity
@@ -2120,16 +2143,32 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
         optionToData[display] = data 
     end
     if #options == 0 then table.insert(options, "Nothing available") end
-    
-    local imageLabel = Instance.new("ImageLabel", parent)
-    imageLabel.Size = UDim2.new(1, -10, 0, 80)
-    imageLabel.BackgroundTransparency = 1
-    imageLabel.ScaleType = Enum.ScaleType.Fit
-    
+
+    local dropdown = createDropdown(parent, title .. " Dropdown", options, false, function(display)
+        if display == "Nothing available" then 
+            State[stateKeyData], State[stateKeyName] = nil, nil
+            infoLabel.Text = "Select an item to view details
+Cost: N/A"
+            imageLabel.Image = ""
+            imageLabel.ImageColor3 = Color3.new(1, 1, 1)
+        else
+            local data = optionToData[display]
+            if data then
+                State[stateKeyName], State[stateKeyData] = display, data
+                infoLabel.Text = "Name: " .. data.name .. "
+Cost: " .. formatNum(data.cost) .. " " .. data.costType .. "
+Rarity: " .. data.rarity
+                imageLabel.Image = data.imageId ~= "" and data.imageId or ""
+                imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
+            end
+        end
+    end, nil, true)
+
     local infoLabel = Instance.new("TextLabel", parent)
     infoLabel.Size = UDim2.new(1, -10, 0, 70)
     infoLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    infoLabel.Text = "Select an item to view details\nCost: N/A"
+    infoLabel.Text = "Select an item to view details
+Cost: N/A"
     infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     infoLabel.Font = Enum.Font.Gotham
     infoLabel.TextSize = 11
@@ -2137,22 +2176,13 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     infoLabel.TextXAlignment = Enum.TextXAlignment.Left
     infoLabel.TextYAlignment = Enum.TextYAlignment.Top
     Instance.new("UICorner", infoLabel).CornerRadius = UDim.new(0, 8)
-    
-    local dropdown = createDropdown(parent, title .. " Dropdown", options, false, function(display)
-        if display == "Nothing available" then 
-            State[stateKeyData], State[stateKeyName] = nil, nil
-            infoLabel.Text = "Select an item to view details\nCost: N/A"
-            imageLabel.Image = ""
-        else
-            local data = optionToData[display]
-            if data then
-                State[stateKeyName], State[stateKeyData] = display, data
-                infoLabel.Text = "Name: " .. data.name .. "\nCost: " .. formatNum(data.cost) .. " " .. data.costType .. "\nRarity: " .. data.rarity
-                imageLabel.Image = data.imageId ~= "" and data.imageId or ""
-            end
-        end
-    end, nil, true)
-    
+
+    local imageLabel = Instance.new("ImageLabel", parent)
+    imageLabel.Size = UDim2.new(1, -10, 0, 80)
+    imageLabel.BackgroundTransparency = 1
+    imageLabel.ScaleType = Enum.ScaleType.Fit
+    imageLabel.ImageColor3 = Color3.new(1, 1, 1)
+
     local buyBtn = Instance.new("TextButton", parent)
     buyBtn.Size = UDim2.new(1, -10, 0, 35)
     buyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
@@ -2162,7 +2192,7 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
         local data = State[stateKeyData]
         if data then fireBuyCrystal(data) end 
     end)
-    
+
     local buy5Btn = Instance.new("TextButton", parent)
     buy5Btn.Size = UDim2.new(1, -10, 0, 35)
     buy5Btn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
@@ -2172,23 +2202,7 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
         local data = State[stateKeyData]
         if data then for _ = 1, 5 do fireBuyCrystal(data) end end 
     end)
-    
-    if isOwner then
-        local buy5EvolveBtn = Instance.new("TextButton", parent)
-        buy5EvolveBtn.Size = UDim2.new(1, -10, 0, 35)
-        buy5EvolveBtn.BackgroundColor3 = Color3.fromRGB(100, 60, 40)
-        buy5EvolveBtn.Text = "Buy 5 & Evolve"
-        buy5EvolveBtn.TextColor3 = Color3.new(1, 1, 1)
-        buy5EvolveBtn.MouseButton1Click:Connect(function() 
-            local data = State[stateKeyData]
-            if data then 
-                for _ = 1, 5 do fireBuyCrystal(data) end
-                evolveByName(data.name)
-                infoLabel.Text = "Bought 5 and evolved " .. data.name 
-            end 
-        end)
-    end
-    
+
     createToggle(parent, "Auto Buy", nil, function(on) 
         if on then 
             if not State[stateKeyData] then return false end
@@ -2198,7 +2212,7 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
         end
         return on 
     end)
-    
+
     return dropdown
 end
 
