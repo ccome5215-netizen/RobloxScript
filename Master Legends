@@ -9,7 +9,7 @@ local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
-local SCRIPT_VERSION = "1.08"
+local SCRIPT_VERSION = "1.09"
 
 local player = Players.LocalPlayer
 local oldUI = getgenv().ML_Expert_UI
@@ -988,7 +988,7 @@ changelogTitle.TextXAlignment = Enum.TextXAlignment.Left
 local changelogText = Instance.new("TextLabel", f_changelog)
 changelogText.Size = UDim2.new(1, -20, 0, 300)
 changelogText.BackgroundTransparency = 1
-changelogText.Text = "Version 1.08\n- Added Manual Refresh\nNote:This is only for Pets And Auras Dropdown in stats tab\nother things are auto refresh.\n- Pets And Auras dropdown in stats tab no longer live updates.\nVersion 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
+changelogText.Text = "Version 1.09\n- Now Aura Image had color on it from auto crystal\n- Added Pet Equip to Stats tab\nVersion 1.08\n- Added Manual Refresh\nNote:This is only for Pets And Auras Dropdown in stats tab\nother things are auto refresh.\n- Pets And Auras dropdown in stats tab no longer live updates.\nVersion 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
 changelogText.TextColor3 = Color3.new(1, 1, 1)
 changelogText.Font = Enum.Font.Gotham
 changelogText.TextSize = 14
@@ -3213,14 +3213,30 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
                 local uStr, ultF = "", tp:FindFirstChild("ultimatesFolder")
                 if ultF then for _, u in ipairs(ultF:GetChildren()) do uStr = uStr .. u.Name .. ": " .. formatNum(u.Value) .. "\n" end end
                 ultList.Text = uStr == "" and "None" or uStr
-                local gpStr, opF = "", tp:FindFirstChild("ownedGamepasses")
+                                local gpStr, opF = "", tp:FindFirstChild("ownedGamepasses")
                 if opF then for _, g in ipairs(opF:GetChildren()) do gpStr = gpStr .. g.Name .. "\n" end end
                 gpList.Text = gpStr == "" and "None" or gpStr
+                local petEquipStr = ""
+                local targetChar = tp.Character
+                if targetChar then
+                    local petNum = 1
+                    for _, child in ipairs(targetChar:GetChildren()) do
+                        if child:IsA("Model") then
+                            local perks = child:FindFirstChild("perksFolder")
+                            if perks then
+                                petEquipStr = petEquipStr .. petNum .. ". " .. child.Name .. "\n"
+                                petNum = petNum + 1
+                            end
+                        end
+                    end
+                end
+                petEquipLabel.Text = petEquipStr == "" and "None" or petEquipStr
             else resetStatsUI() end
-        else 
+         else 
             for s, label in pairs(statsDisp) do label.Text = s .. ": None" end 
             if ultList then ultList.Text = "None" end
             if gpList then gpList.Text = "None" end
+            if petEquipLabel then petEquipLabel.Text = "None" end
         end
     end
 end))
