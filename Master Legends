@@ -1895,15 +1895,13 @@ petEquipLabel.TextYAlignment = Enum.TextYAlignment.Top
 petEquipLabel.Text = "None"
 petEquipLabel.TextWrapped = true
 petEquipLabel.AutomaticSize = Enum.AutomaticSize.Y
-
 local inventoryDetailsLabel = Instance.new("TextLabel", f3)
 inventoryDetailsLabel.Size = UDim2.new(1, -10, 0, 150)
 inventoryDetailsLabel.BackgroundTransparency = 1
 inventoryDetailsLabel.TextColor3 = Color3.new(1, 1, 1)
 inventoryDetailsLabel.TextXAlignment = Enum.TextXAlignment.Left
 inventoryDetailsLabel.TextYAlignment = Enum.TextYAlignment.Top
-inventoryDetailsLabel.Text = "--- INVENTORY ---
-Nothing Here"
+inventoryDetailsLabel.Text = "--- INVENTORY ---"
 inventoryDetailsLabel.TextWrapped = true
 inventoryDetailsLabel.AutomaticSize = Enum.AutomaticSize.Y
 
