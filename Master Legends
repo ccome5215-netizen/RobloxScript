@@ -988,7 +988,7 @@ changelogTitle.TextXAlignment = Enum.TextXAlignment.Left
 local changelogText = Instance.new("TextLabel", f_changelog)
 changelogText.Size = UDim2.new(1, -20, 0, 300)
 changelogText.BackgroundTransparency = 1
-changelogText.Text = "Version 1.09\n- Now Aura Image had color on it from auto crystal\n- Added Pet Equip to Stats tab\nVersion 1.08\n- Added Manual Refresh\nNote:This is only for Pets And Auras Dropdown in stats tab\nother things are auto refresh.\n- Pets And Auras dropdown in stats tab no longer live updates.\nVersion 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
+changelogText.Text = "Version 1.10\n-Updated Auto Muscle King Position Best Safe Spot For Now\n-God Mode Now Stop Brawl Teleporting from You to Brawl Field\n-Removed Buy 5 and Evolve Buttons From Auto Crystal Because It's Useless\n-Aura Image now had color\nVersion 1.09\n- Now Aura Image had color on it from auto crystal\n- Added Pet Equip to Stats tab\nVersion 1.08\n- Added Manual Refresh\nNote:This is only for Pets And Auras Dropdown in stats tab\nother things are auto refresh.\n- Pets And Auras dropdown in stats tab no longer live updates.\nVersion 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
 changelogText.TextColor3 = Color3.new(1, 1, 1)
 changelogText.Font = Enum.Font.Gotham
 changelogText.TextSize = 14
@@ -1902,7 +1902,7 @@ inventoryDetailsLabel.BackgroundTransparency = 1
 inventoryDetailsLabel.TextColor3 = Color3.new(1, 1, 1)
 inventoryDetailsLabel.TextXAlignment = Enum.TextXAlignment.Left
 inventoryDetailsLabel.TextYAlignment = Enum.TextYAlignment.Top
-inventoryDetailsLabel.Text = "--- INVENTORY ---"
+inventoryDetailsLabel.Text = "--- INVENTORY ---\nNothing Here"
 inventoryDetailsLabel.TextWrapped = true
 inventoryDetailsLabel.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -2121,10 +2121,6 @@ end
 
 scanCrystalShop()
 
-local function evolveByName(itemName) 
-    if itemName then pcall(function() ReplicatedStorage.rEvents.petEvolveEvent:FireServer(itemName) end) end 
-end
-
 local function createCrystalSection(parent, title, list, stateKeyData, stateKeyName, startAutoFunc, stopAutoFunc)
     local titleLabel = Instance.new("TextLabel", parent)
     titleLabel.Size = UDim2.new(1, -10, 0, 25)
@@ -2143,31 +2139,38 @@ local function createCrystalSection(parent, title, list, stateKeyData, stateKeyN
     end
     if #options == 0 then table.insert(options, "Nothing available") end
 
-    local dropdown = createDropdown(parent, title .. " Dropdown", options, false, function(display)
+    local infoLabel, imageLabel
+
+    local dropdownText = title:find("PETS") and "Pet Dropdown" or "Aura Dropdown"
+    local dropdown = createDropdown(parent, dropdownText, options, false, function(display)
         if display == "Nothing available" then 
             State[stateKeyData], State[stateKeyName] = nil, nil
-            infoLabel.Text = "Select an item to view details
-Cost: N/A"
-            imageLabel.Image = ""
-            imageLabel.ImageColor3 = Color3.new(1, 1, 1)
+            if infoLabel then
+                infoLabel.Text = "Select an item to view details\nCost: N/A"
+            end
+            if imageLabel then
+                imageLabel.Image = ""
+                imageLabel.ImageColor3 = Color3.new(1, 1, 1)
+            end
         else
             local data = optionToData[display]
             if data then
                 State[stateKeyName], State[stateKeyData] = display, data
-                infoLabel.Text = "Name: " .. data.name .. "
-Cost: " .. formatNum(data.cost) .. " " .. data.costType .. "
-Rarity: " .. data.rarity
-                imageLabel.Image = data.imageId ~= "" and data.imageId or ""
-                imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
+                if infoLabel then
+                    infoLabel.Text = "Name: " .. data.name .. "\nCost: " .. formatNum(data.cost) .. " " .. data.costType .. "\nRarity: " .. data.rarity
+                end
+                if imageLabel then
+                    imageLabel.Image = data.imageId ~= "" and data.imageId or ""
+                    imageLabel.ImageColor3 = data.powerUpColor or Color3.new(1, 1, 1)
+                end
             end
         end
     end, nil, true)
 
-    local infoLabel = Instance.new("TextLabel", parent)
+    infoLabel = Instance.new("TextLabel", parent)
     infoLabel.Size = UDim2.new(1, -10, 0, 70)
     infoLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    infoLabel.Text = "Select an item to view details
-Cost: N/A"
+    infoLabel.Text = "Select an item to view details\nCost: N/A"
     infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     infoLabel.Font = Enum.Font.Gotham
     infoLabel.TextSize = 11
@@ -2176,7 +2179,7 @@ Cost: N/A"
     infoLabel.TextYAlignment = Enum.TextYAlignment.Top
     Instance.new("UICorner", infoLabel).CornerRadius = UDim.new(0, 8)
 
-    local imageLabel = Instance.new("ImageLabel", parent)
+    imageLabel = Instance.new("ImageLabel", parent)
     imageLabel.Size = UDim2.new(1, -10, 0, 80)
     imageLabel.BackgroundTransparency = 1
     imageLabel.ScaleType = Enum.ScaleType.Fit
@@ -2190,16 +2193,6 @@ Cost: N/A"
     buyBtn.MouseButton1Click:Connect(function() 
         local data = State[stateKeyData]
         if data then fireBuyCrystal(data) end 
-    end)
-
-    local buy5Btn = Instance.new("TextButton", parent)
-    buy5Btn.Size = UDim2.new(1, -10, 0, 35)
-    buy5Btn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
-    buy5Btn.Text = "Buy 5"
-    buy5Btn.TextColor3 = Color3.new(1, 1, 1)
-    buy5Btn.MouseButton1Click:Connect(function() 
-        local data = State[stateKeyData]
-        if data then for _ = 1, 5 do fireBuyCrystal(data) end end 
     end)
 
     createToggle(parent, "Auto Buy", nil, function(on) 
