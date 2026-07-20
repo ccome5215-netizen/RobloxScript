@@ -948,7 +948,8 @@ table.insert(tabs, "Teleport")
 table.insert(tabs, "Leaderboard")
 if isOwner then table.insert(tabs, "Config") end
 table.insert(tabs, "Killer")
-table.insert(tabs, "Changelog")
+table.insert(tabs, "Update Logs")
+table.insert(tabs, "Credits")
 
 SidebarScroll.CanvasSize = isMobile and UDim2.new(0, #tabs * 75, 0, 0) or UDim2.new(0, 0, 0, #tabs * 32)
 
@@ -975,26 +976,57 @@ for i, tName in ipairs(tabs) do
     end)
 end
 
-local f_changelog = frames["Changelog"]
-local changelogTitle = Instance.new("TextLabel", f_changelog)
-changelogTitle.Size = UDim2.new(1, -10, 0, 30)
-changelogTitle.BackgroundTransparency = 1
-changelogTitle.Text = "Changelog"
-changelogTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
-changelogTitle.Font = Enum.Font.GothamBold
-changelogTitle.TextSize = 18
-changelogTitle.TextXAlignment = Enum.TextXAlignment.Left
+local f_updatelogs = frames["Update Logs"]
+local updateLogsTitle = Instance.new("TextLabel", f_updatelogs)
+updateLogsTitle.Size = UDim2.new(1, -10, 0, 30)
+updateLogsTitle.BackgroundTransparency = 1
+updateLogsTitle.Text = "Update Logs"
+updateLogsTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+updateLogsTitle.Font = Enum.Font.GothamBold
+updateLogsTitle.TextSize = 18
+updateLogsTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-local changelogText = Instance.new("TextLabel", f_changelog)
-changelogText.Size = UDim2.new(1, -20, 0, 300)
-changelogText.BackgroundTransparency = 1
-changelogText.Text = "Version 1.10\n-Updated Auto Muscle King Position Best Safe Spot For Now\n-God Mode Now Stop Brawl Teleporting from You to Brawl Field\n-Removed Buy 5 and Evolve Buttons From Auto Crystal Because It's Useless\n-Aura Image now had color\nVersion 1.09\n- Now Aura Image had color on it from auto crystal\n- Added Pet Equip to Stats tab\nVersion 1.08\n- Added Manual Refresh\nNote:This is only for Pets And Auras Dropdown in stats tab\nother things are auto refresh.\n- Pets And Auras dropdown in stats tab no longer live updates.\nVersion 1.07\n- Fixed Pets And Auras Dropdown from Stats Tab Which It Says Nothing Here even track stats are ON\n- Dropdown Name Size has been increased\nVersion 1.06\n- Changed Kill Method (New Kill Method)\n- Renamed to Master Legends\nVersion 1.05\n- Added Pet Storage Details\n(Tracks and counts all pets in your storage live)\n- Added Aura Storage Details\n(Tracks and counts all auras in your storage live)\n- Added Auto Eat Protein Egg\n- Added Eat Protein Egg Every X Minutes Textbox\nVersion 1.00\n- Key System Added\nCredit to IM_NOOB(LarryGiveaway)"
-changelogText.TextColor3 = Color3.new(1, 1, 1)
-changelogText.Font = Enum.Font.Gotham
-changelogText.TextSize = 14
-changelogText.TextXAlignment = Enum.TextXAlignment.Left
-changelogText.TextYAlignment = Enum.TextYAlignment.Top
-changelogText.TextWrapped = true
+local copyLinkBtn = Instance.new("TextButton", f_updatelogs)
+copyLinkBtn.Size = UDim2.new(1, -10, 0, 40)
+copyLinkBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+copyLinkBtn.Text = "Copy Link To Clipboard"
+copyLinkBtn.TextColor3 = Color3.new(1, 1, 1)
+copyLinkBtn.Font = Enum.Font.GothamBold
+copyLinkBtn.TextSize = 14
+Instance.new("UICorner", copyLinkBtn).CornerRadius = UDim.new(0, 6)
+copyLinkBtn.MouseButton1Click:Connect(function()
+    pcall(function() setclipboard("https://pastebin.com/raw/wN6vkm1q") end)
+end)
+
+local updateLogsInfo = Instance.new("TextLabel", f_updatelogs)
+updateLogsInfo.Size = UDim2.new(1, -10, 0, 40)
+updateLogsInfo.BackgroundTransparency = 1
+updateLogsInfo.Text = "Paste it in Browser to See Update Logs"
+updateLogsInfo.TextColor3 = Color3.fromRGB(200, 200, 200)
+updateLogsInfo.Font = Enum.Font.Gotham
+updateLogsInfo.TextSize = 13
+updateLogsInfo.TextXAlignment = Enum.TextXAlignment.Left
+
+local f_credits = frames["Credits"]
+local creditsTitle = Instance.new("TextLabel", f_credits)
+creditsTitle.Size = UDim2.new(1, -10, 0, 30)
+creditsTitle.BackgroundTransparency = 1
+creditsTitle.Text = "Credits"
+creditsTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+creditsTitle.Font = Enum.Font.GothamBold
+creditsTitle.TextSize = 18
+creditsTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local creditsText = Instance.new("TextLabel", f_credits)
+creditsText.Size = UDim2.new(1, -10, 0, 250)
+creditsText.BackgroundTransparency = 1
+creditsText.Text = "Credit to IM_NOOB(LarryGiveaway)Main Acc and IM_GRAY(meltdown_speed123)Alt Acc\nSpecial Member Thanks to my support.\n1.IM_LEGEND(Abhhinai690)\n2.IM_NARS(nars_thegreat)\n3.chickenchop(afliqmuzakir)"
+creditsText.TextColor3 = Color3.new(1, 1, 1)
+creditsText.Font = Enum.Font.Gotham
+creditsText.TextSize = 14
+creditsText.TextXAlignment = Enum.TextXAlignment.Left
+creditsText.TextYAlignment = Enum.TextYAlignment.Top
+creditsText.TextWrapped = true
 
 local f1 = frames["Auto Farm"]
 ui.selectRockDD = createDropdown(f1, "Select Rock", {"Tiny Rock", "Punching Rock", "Large Rock", "Golden Rock", "Frozen Rock", "Mystic Rock", "Inferno Rock", "Legend Rock", "Muscle King Rock", "Jungle Rock"}, false, function(v)
@@ -2624,7 +2656,7 @@ end)
 
 local f_killer = frames["Killer"]
 
-local function refreshKillerDropdowns()
+function refreshKillerDropdowns()
     local playerOptions = {}
     local hasOthers = false
     for _, p in ipairs(Players:GetPlayers()) do 
@@ -2734,9 +2766,9 @@ ui.autoEvilKarmaToggle = createToggle(f_killer, "Auto Evil Karma", "autoEvilKarm
     return val 
 end)
 
-local disabledMotorMap = {}
+disabledMotorMap = {}
 
-local function getEffectiveTargetSet()
+function getEffectiveTargetSet()
     local effective = {}
     for _, srcSet in pairs(killSources) do
         for name, _ in pairs(srcSet) do
@@ -2749,7 +2781,7 @@ local function getEffectiveTargetSet()
     return effective
 end
 
-local function restoreAllMotor6Ds(targetName)
+function restoreAllMotor6Ds(targetName)
     if disabledMotorMap[targetName] then
         for _, entry in ipairs(disabledMotorMap[targetName]) do
             pcall(function() entry[1].Parent = entry[2] end)
@@ -2758,7 +2790,7 @@ local function restoreAllMotor6Ds(targetName)
     end
 end
 
-local function disableMotor6DsForTarget(char, targetName)
+function disableMotor6DsForTarget(char, targetName)
     if disabledMotorMap[targetName] then return end
     disabledMotorMap[targetName] = {}
     local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -2773,7 +2805,7 @@ local function disableMotor6DsForTarget(char, targetName)
     end
 end
 
-local function setupKillerCharListener(targetPlayer)
+function setupKillerCharListener(targetPlayer)
     targetPlayer.CharacterAdded:Connect(function(newChar)
         local name = targetPlayer.Name
         task.wait(0.1)
@@ -2900,7 +2932,7 @@ table.insert(getgenv().ML_Expert_Loops, RunService.Heartbeat:Connect(function()
     end
 end))
 
-local function getTeleportPosForMap(currentMap)
+function getTeleportPosForMap(currentMap)
     if not currentMap or currentMap == "" then return Vector3.new(4.4, 7.3, 132.8) end
     local lowerMap = currentMap:lower()
     if lowerMap:find("jungle") then return Vector3.new(-8685.6, 6.7, 2392.3)
@@ -2976,12 +3008,34 @@ table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
     end
 end))
 
+godModeLastPos = nil
 table.insert(getgenv().ML_Expert_Loops, task.spawn(function()
     while true do
         if State.lessLag then task.wait(0.1) else RunService.Heartbeat:Wait() end
         if State.stopEverything then continue end
-        local cframeFeaturesActive = State.autoMuscleKing or State.lockedPos ~= nil or (State.teleportActive and tick() < State.teleportActiveEnd)
-        if State.godMode and not cframeFeaturesActive then pcall(function() ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl") end) end
+        local cframeFeaturesActive = State.autoMuscleKing or State.lockedPos ~= nil or State.fly or State.autoWalkSpeed or (State.teleportActive and tick() < State.teleportActiveEnd)
+        if State.godMode then
+            pcall(function() ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl") end)
+            local char = player.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if root then
+                if not godModeLastPos then
+                    godModeLastPos = root.CFrame
+                else
+                    if (root.Position - godModeLastPos.Position).Magnitude > 80 then
+                        if not cframeFeaturesActive then
+                            root.CFrame = godModeLastPos
+                        else
+                            godModeLastPos = root.CFrame
+                        end
+                    else
+                        godModeLastPos = root.CFrame
+                    end
+                end
+            end
+        else
+            godModeLastPos = nil
+        end
         if State.autoSize then pcall(function() ReplicatedStorage.rEvents.changeSpeedSizeRemote:InvokeServer("changeSize", tonumber(Config.SizeValue) or 1) end) end
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
@@ -3287,7 +3341,7 @@ end))
 
 SetToggle[ui.walkOnWaterBtn](true)
 
-local function onUnload()
+function onUnload()
     for name in pairs(disabledMotorMap) do
         restoreAllMotor6Ds(name)
     end
