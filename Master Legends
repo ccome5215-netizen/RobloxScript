@@ -9,6 +9,7 @@ local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
 local SCRIPT_VERSION = "1.10"
 local player = Players.LocalPlayer
 local oldUI = getgenv().ML_Expert_UI
@@ -710,6 +711,7 @@ searchBox.ZIndex = 11
 list.Position = UDim2.fromOffset(0, 55)
 end
 local currentOptions = options
+local isToggling = false
 local function refresh(newOpts)
 if newOpts then options = newOpts end
 currentOptions = options
@@ -746,7 +748,7 @@ end)
 end
 end
 local listHeight = math.min(visibleCount * 25, 150)
-if list.Visible then
+if list.Visible and not isToggling then
 local totalHeight = 30 + (searchBox and searchBox.Visible and 25 or 0) + listHeight
 container.Size = UDim2.new(1, -10, 0, totalHeight)
 list.Size = UDim2.new(1, 0, 0, listHeight)
@@ -757,14 +759,30 @@ if searchBox then
 searchBox:GetPropertyChangedSignal("Text"):Connect(function() if list.Visible then refresh() end end)
 end
 headerBtn.MouseButton1Click:Connect(function()
+if isToggling then return end
+isToggling = true
 list.Visible = not list.Visible
-if searchBox then searchBox.Visible = list.Visible end
 local listHeight = math.min(#currentOptions * 25, 150)
-local totalHeight = 30 + (searchBox and 25 or 0) + listHeight
-container.Size = list.Visible and UDim2.new(1, -10, 0, totalHeight) or UDim2.new(1, -10, 0, 30)
-list.Size = UDim2.new(1, 0, 0, listHeight)
+local totalHeight = 30 + (list.Visible and (searchBox and 25 or 0) + listHeight or 0)
+if list.Visible then
+if searchBox then searchBox.Visible = true end
+list.Size = UDim2.new(1, 0, 0, 0)
+container.Size = UDim2.new(1, -10, 0, 30)
+refresh()
+TweenService:Create(container, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -10, 0, totalHeight)}):Play()
+local listTween = TweenService:Create(list, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, listHeight)})
+listTween:Play()
+listTween.Completed:Connect(function() isToggling = false end)
+else
+TweenService:Create(container, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -10, 0, 30)}):Play()
+local listTween = TweenService:Create(list, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 0)})
+listTween:Play()
+listTween.Completed:Connect(function() 
+if searchBox then searchBox.Visible = false end
+isToggling = false
+end)
+end
 list.CanvasSize = UDim2.new(0, 0, 0, #currentOptions * 25)
-if list.Visible then refresh() end
 end)
 refresh()
 return { refresh = refresh, setHeaderText = function(txt) headerBtn.Text = txt end, setValue = function(val) if not multi then headerBtn.Text = tostring(val) .. " v"; callback(val) end end }
@@ -897,8 +915,12 @@ local layout = Instance.new("UIListLayout", f)
 layout.Padding = UDim.new(0, 5)
 frames[tName] = f
 btn.MouseButton1Click:Connect(function()
+if not f.Visible then
 for _, other in pairs(frames) do other.Visible = false end
 f.Visible = true
+f.Position = UDim2.new(0, 25, 0, 0)
+TweenService:Create(f, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+end
 end)
 end
 local f_updatelogs = frames["Update Logs"]
@@ -1927,7 +1949,7 @@ local f5 = frames["Auto Treadmill"]
 local treadmillOptions = {}
 for _, name in ipairs({ "Tiny Treadmill", "Small Treadmill", "Medium Treadmill", "Large Treadmill", "Big Treadmill", "Mystic Treadmill", "Legend Treadmill", "Jungle Treadmill" }) do
 local data = treadmillData[name]
-if data then table.insert(treadmillOptions, name .. " (+ " .. data.exp .. " EXP)") end
+if data then table.insert(treadmillOptions, name .. " (+" .. data.exp .. " EXP)") end
 end
 ui.treadmillDD = createDropdown(f5, "Select Treadmill", treadmillOptions, false, function(display)
 local realName = display:match("^(.-) %(")
@@ -2410,7 +2432,7 @@ end
 gymDD.setValue(gymDisplayName)
 end
 end
-if s.selectedTreadmill and ui.treadmillDD then ui.treadmillDD.setValue(s.selectedTreadmill .. " (+ " .. treadmillData[s.selectedTreadmill].exp .. " EXP)") end
+if s.selectedTreadmill and ui.treadmillDD then ui.treadmillDD.setValue(s.selectedTreadmill .. " (+" .. treadmillData[s.selectedTreadmill].exp .. " EXP)") end
 if s.lockPosition and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then State.lockedPos = player.Character.HumanoidRootPart.CFrame end
 if s.autoGym then startAutoGym() end
 if s.autoTreadmill and State.selectedTreadmill then startAutoTreadmill() end
