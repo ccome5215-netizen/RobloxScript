@@ -204,7 +204,7 @@ if State.preGlitchPos and hrpCache then
 hrpCache.CFrame = State.preGlitchPos
 end
 if callback then callback() end
-elseif method == "NonTeleport" then
+elseif method == "NonTeleport with Remote" or method == "NonTeleport With Punch" then
 State.isTransitioning = true
 task.spawn(function()
 task.wait(1)
@@ -892,8 +892,8 @@ if State.flyBody.Velocity then State.flyBody.Velocity:Destroy() end
 if State.flyBody.Gyro then State.flyBody.Gyro:Destroy() end
 State.flyBody = nil
 end
-if State.autoGlitch and State.selectedMethod == "NonTeleport" then
-handleGlitchCleanup("NonTeleport")
+if State.autoGlitch and (State.selectedMethod == "NonTeleport with Remote" or State.selectedMethod == "NonTeleport With Punch") then
+handleGlitchCleanup(State.selectedMethod)
 end
 end)
 updateCharCache()
@@ -1469,7 +1469,7 @@ ui.selectRockDD = createDropdown(f1, "Select Rock", { "Tiny Rock", "Punching Roc
 if State.autoGlitch then handleGlitchCleanup(State.selectedMethod, function() State.selectedRock = v end) else State.selectedRock = v end
 table.clear(rockCache)
 end)
-ui.selectMethodDD = createDropdown(f1, "Select Method", {"Teleport", "NonTeleport"}, false, function(v)
+ui.selectMethodDD = createDropdown(f1, "Select Method", {"Teleport", "NonTeleport with Remote", "NonTeleport With Punch"}, false, function(v)
 if State.autoGlitch and State.selectedMethod ~= v then
 handleGlitchCleanup(State.selectedMethod, function()
 State.selectedMethod = v
@@ -2799,7 +2799,13 @@ if not hasPunch or not anyKillActive then
 for name in pairs(disabledMotorMap) do
 restoreAllMotor6Ds(name)
 end
+if punchTool and punchTool:FindFirstChild("attackTime") then
+punchTool.attackTime.Value = 0.35
+end
 continue
+end
+if punchTool and punchTool:FindFirstChild("attackTime") then
+punchTool.attackTime.Value = 0.01
 end
 if not charCache then continue end
 local rightHand = charCache:FindFirstChild("RightHand") or charCache:FindFirstChild("Right Arm")
@@ -3084,7 +3090,8 @@ if punchTool and punchTool:FindFirstChild("attackTime") then punchTool.attackTim
 local edgeOffset = (actualRockPart.Size.Z / 2) + 2.5 + ((tonumber(Config.SizeValue) or 1) * 0.25)
 root.CFrame = CFrame.lookAt((actualRockPart.CFrame * CFrame.new(0, 0, edgeOffset)).Position, actualRockPart.Position)
 if punchTool then punchTool:Activate() end
-elseif State.selectedMethod == "NonTeleport" then
+elseif State.selectedMethod == "NonTeleport with Remote" then
+if punchTool and punchTool:FindFirstChild("attackTime") then punchTool.attackTime.Value = 0.05 end
 local currentHand = toggleHand and "Left" or "Right"
 local targetHand = charCache:FindFirstChild(currentHand .. "Hand") or charCache:FindFirstChild(currentHand .. " Arm")
 toggleHand = not toggleHand
@@ -3101,6 +3108,24 @@ actualRockPart.AssemblyAngularVelocity = Vector3.zero
 toggleRockVisuals(rockModel, false)
 end
 pcall(function() player.muscleEvent:FireServer("punch", toggleHand and "leftHand" or "rightHand") end)
+elseif State.selectedMethod == "NonTeleport With Punch" then
+if punchTool and punchTool:FindFirstChild("attackTime") then punchTool.attackTime.Value = 0.01 end
+local currentHand = toggleHand and "Left" or "Right"
+local targetHand = charCache:FindFirstChild(currentHand .. "Hand") or charCache:FindFirstChild(currentHand .. " Arm")
+toggleHand = not toggleHand
+if targetHand then
+if not rockCache[actualRockPart] then rockCache[actualRockPart] = { Size = actualRockPart.Size, CanCollide = actualRockPart.CanCollide, CFrame = actualRockPart.CFrame, Anchored = actualRockPart.Anchored } end
+actualRockPart.CanCollide = false
+actualRockPart.Anchored = false
+local mySize = player:FindFirstChild("customSize") and player.customSize.Value or tonumber(Config.SizeValue) or 1
+local newSize = math.min(2, math.max(0.5, mySize / 2))
+actualRockPart.Size = Vector3.new(newSize, newSize, newSize)
+actualRockPart.CFrame = targetHand.CFrame
+actualRockPart.AssemblyLinearVelocity = Vector3.zero
+actualRockPart.AssemblyAngularVelocity = Vector3.zero
+toggleRockVisuals(rockModel, false)
+end
+if punchTool then punchTool:Activate() end
 end
 if not State.autoGlitchTrain then
 for _, tool in ipairs(charCache:GetChildren()) do
@@ -3274,8 +3299,10 @@ if State.lowCpu then task.wait(0.1) else RunService.Heartbeat:Wait() end
 if State.stopEverything then continue end
 if not charCache then continue end
 local p = getPunch()
+local anyKillActive = KillerState.killSelectedEnabled or KillerState.killEveryoneEnabled or KillerState.autoGoodKarmaEnabled or KillerState.autoEvilKarmaEnabled
 if p and p:FindFirstChild("attackTime") then
-if State.fastPunch then pcall(function() p.attackTime.Value = 0 end) elseif not State.autoGlitch then pcall(function() p.attackTime.Value = 0.35 end) end
+if State.fastPunch then pcall(function() p.attackTime.Value = 0 end) 
+elseif not State.autoGlitch and not anyKillActive then pcall(function() p.attackTime.Value = 0.35 end) end
 end
 if State.autoPunch and not State.isTransitioning then
 local equippedTool = charCache:FindFirstChildOfClass("Tool")
