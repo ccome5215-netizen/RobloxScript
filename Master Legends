@@ -23,6 +23,7 @@ local isOwner = false
 local keyValidated = false
 local rEvents = ReplicatedStorage:WaitForChild("rEvents")
 local ui = { toggleButtons = {}, frames = {} }
+local toggleBtnStates = {}
 local State = {
 selectedRock = nil, selectedMethod = nil, autoGlitch = false, autoGlitchTrain = false,
 glitchStartTime = 0, glitchAccumulated = 0, preGlitchPos = nil, isTransitioning = false,
@@ -40,7 +41,8 @@ autoUnequipBoosts = false, stopEverything = false, walkOnWater = true,
 selectedTreadmill = nil, autoTreadmill = false, autoTreadmillThread = nil,
 initialPets = {}, initialAuras = {},
 autoProteinEgg = false, proteinEggInterval = 10,
-lastSelectedMap = nil, lastSelectedGym = nil
+lastSelectedMap = nil, lastSelectedGym = nil,
+blackScreen = false
 }
 local KillerState = {
 selectedPlayers = {}, manualWhitelist = {}, autoWhitelist = {}, whitelistFriendsEnabled = false,
@@ -62,6 +64,10 @@ local disabledMotorMap = {}
 local PlayerInventoryCache = {}
 local PlayerInventoryChanged = {}
 local Config = { SizeValue = "1", RebirthTarget = "0", WalkSpeed = "16", FlySpeed = "50", ThemeR = 25, ThemeG = 25, ThemeB = 25 }
+local originalFogEnd = Lighting.FogEnd
+local originalBrightness = Lighting.Brightness
+local originalGlobalShadows = Lighting.GlobalShadows
+local hiddenGuis = {}
 
 rockData = {
 ["Tiny Rock"] = {req = 0, name = "Tiny Rock", idx = 1, glitchValue = 0.025},
@@ -399,15 +405,21 @@ local SetToggle = {}
 local function createToggle(parent, text, key, callback)
 local btn = Instance.new("TextButton", parent)
 btn.Size = UDim2.new(1, -10, 0, 30)
-btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 btn.Text = text .. " [OFF]"
 btn.TextColor3 = Color3.new(1, 1, 1)
 local state = false
 if key then ui.toggleButtons[key] = btn end
+toggleBtnStates[btn] = false
 SetToggle[btn] = function(newState)
 state = newState
+toggleBtnStates[btn] = state
 btn.Text = text .. (state and " [ON]" or " [OFF]")
-btn.BackgroundColor3 = state and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
+if state then
+btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+else
+local r, g, b = Config.ThemeR or 25, Config.ThemeG or 25, Config.ThemeB or 25
+btn.BackgroundColor3 = Color3.fromRGB(math.clamp(r+15, 0, 255), math.clamp(g+15, 0, 255), math.clamp(b+15, 0, 255))
+end
 end
 btn.MouseButton1Click:Connect(function()
 local newState = not state
@@ -1255,6 +1267,7 @@ local tabs = { "Auto Farm", "Farm", "Stats", "Auto Gym", "Auto Treadmill", "Auto
 if isOwner then table.insert(tabs, "Glitchable Rebirth") end
 if isOwner then table.insert(tabs, "Calculator") end
 table.insert(tabs, "Teleport")
+table.insert(tabs, "No Lag")
 table.insert(tabs, "UI Color")
 table.insert(tabs, "Config")
 table.insert(tabs, "Killer")
@@ -1290,6 +1303,77 @@ end
 end
 
 do
+local f_nolag = ui.frames["No Lag"]
+createToggle(f_nolag, "Less Lag", "lowCpu", function(val) State.lowCpu = val; return val end)
+if isOwner then
+createToggle(f_nolag, "Boost Your FPS", "fpsBoost", function(val)
+if val then
+if typeof(setfpscap) == "function" then setfpscap(9999) end
+Lighting.GlobalShadows = false
+Lighting.Brightness = 0
+Lighting.FogEnd = 0
+pcall(function() settings().Rendering.QualityLevel = 1 end)
+for _, v in ipairs(workspace:GetDescendants()) do
+if v:IsA("BasePart") then
+v.Material = Enum.Material.SmoothPlastic
+v.Reflectance = 0
+elseif v:IsA("Decal") or v:IsA("Texture") then
+v.Transparency = 1
+end
+end
+else
+Lighting.GlobalShadows = true
+Lighting.Brightness = 2
+Lighting.FogEnd = 100000
+pcall(function() settings().Rendering.QualityLevel = 3 end)
+end
+return val
+end)
+end
+createToggle(f_nolag, "Black Screen", "blackScreen", function(val)
+State.blackScreen = val
+if val then
+originalFogEnd = Lighting.FogEnd
+originalBrightness = Lighting.Brightness
+originalGlobalShadows = Lighting.GlobalShadows
+Lighting.FogEnd = 0
+Lighting.Brightness = 0
+Lighting.GlobalShadows = false
+pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false) end)
+for _, gui in ipairs(game:GetService("CoreGui"):GetChildren()) do
+if gui:IsA("ScreenGui") and gui.Name ~= "MuscleLegendsHub" and gui.Name ~= "ML_KeySystem" and gui.Name ~= "ML_ConfirmPopup" then
+if gui.Enabled then
+gui.Enabled = false
+hiddenGuis[gui] = true
+end
+end
+end
+local pg = player:FindFirstChild("PlayerGui")
+if pg then
+for _, gui in ipairs(pg:GetChildren()) do
+if gui:IsA("ScreenGui") and gui.Enabled then
+gui.Enabled = false
+hiddenGuis[gui] = true
+end
+end
+end
+else
+Lighting.FogEnd = originalFogEnd
+Lighting.Brightness = originalBrightness
+Lighting.GlobalShadows = originalGlobalShadows
+pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end)
+for gui, _ in pairs(hiddenGuis) do
+if gui and gui.Parent then
+gui.Enabled = true
+end
+end
+hiddenGuis = {}
+end
+return val
+end)
+end
+
+do
 local f_theme = ui.frames["UI Color"]
 local themeHeader = Instance.new("TextLabel", f_theme)
 themeHeader.Size = UDim2.new(1, -10, 0, 25)
@@ -1306,7 +1390,13 @@ local baseCol = Color3.fromRGB(r, g, b)
 local btnCol = Color3.fromRGB(math.clamp(r+15, 0, 255), math.clamp(g+15, 0, 255), math.clamp(b+15, 0, 255))
 ui.MainFrame.BackgroundColor3 = baseCol
 for _, child in ipairs(ui.MainFrame:GetDescendants()) do
-if child:IsA("TextButton") or child:IsA("TextBox") or child:IsA("ScrollingFrame") then
+if child:IsA("TextButton") then
+if toggleBtnStates[child] then
+child.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+else
+child.BackgroundColor3 = btnCol
+end
+elseif child:IsA("TextBox") or child:IsA("ScrollingFrame") then
 child.BackgroundColor3 = btnCol
 elseif child:IsA("Frame") then
 local n = child.Name
@@ -1574,16 +1664,21 @@ ui.rebBarFill = rebBarFill
 local function createRebirthConfirmToggle(parent, text, key, stateKey, otherStateKey, otherKey)
 local btn = Instance.new("TextButton", parent)
 btn.Size = UDim2.new(1, -10, 0, 30)
-btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 btn.Text = text .. " [OFF]"
 btn.TextColor3 = Color3.new(1, 1, 1)
 local state = false
 if key then ui.toggleButtons[key] = btn end
+toggleBtnStates[btn] = false
 local function updateVisual()
 btn.Text = text .. (state and " [ON]" or " [OFF]")
-btn.BackgroundColor3 = state and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
+if state then
+btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+else
+local r, g, b = Config.ThemeR or 25, Config.ThemeG or 25, Config.ThemeB or 25
+btn.BackgroundColor3 = Color3.fromRGB(math.clamp(r+15, 0, 255), math.clamp(g+15, 0, 255), math.clamp(b+15, 0, 255))
 end
-SetToggle[btn] = function(newState) state = newState; updateVisual() end
+end
+SetToggle[btn] = function(newState) state = newState; toggleBtnStates[btn] = state; updateVisual() end
 btn.MouseButton1Click:Connect(function()
 if state then
 state = false
@@ -1610,15 +1705,21 @@ createRebirthConfirmToggle(f1, "Auto Rebirth Inf", "autoRebirthInf", "autoRebirt
 do
 local mkBtn = Instance.new("TextButton", f1)
 mkBtn.Size = UDim2.new(1, -10, 0, 30)
-mkBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 mkBtn.Text = "Auto Muscle King [OFF]"
 mkBtn.TextColor3 = Color3.new(1, 1, 1)
 ui.toggleButtons["autoMuscleKing"] = mkBtn
 local mkState = false
+toggleBtnStates[mkBtn] = false
 SetToggle[mkBtn] = function(newState)
 mkState = newState
+toggleBtnStates[mkBtn] = newState
 mkBtn.Text = "Auto Muscle King " .. (mkState and " [ON]" or " [OFF]")
-mkBtn.BackgroundColor3 = mkState and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
+if mkState then
+mkBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+else
+local r, g, b = Config.ThemeR or 25, Config.ThemeG or 25, Config.ThemeB or 25
+mkBtn.BackgroundColor3 = Color3.fromRGB(math.clamp(r+15, 0, 255), math.clamp(g+15, 0, 255), math.clamp(b+15, 0, 255))
+end
 end
 mkBtn.MouseButton1Click:Connect(function()
 if not mkState then
@@ -1652,20 +1753,6 @@ end
 
 do
 local f2 = ui.frames["Farm"]
-createToggle(f2, "Low CPU Mode", "lowCpu", function(val) State.lowCpu = val end)
-if isOwner then
-createToggle(f2, "Boost Your FPS", "fpsBoost", function(val)
-if val then
-if typeof(setfpscap) == "function" then setfpscap(9999) end
-Lighting.GlobalShadows = false
-Lighting.Brightness = 1
-else
-Lighting.GlobalShadows = true
-Lighting.Brightness = 2
-end
-return val
-end)
-end
 local sizeBox = Instance.new("TextBox", f2)
 sizeBox.Size = UDim2.new(1, -10, 0, 30)
 sizeBox.Text = Config.SizeValue
@@ -1741,12 +1828,22 @@ local snacksToEat = {}
 for _, t in ipairs(player.Backpack:GetChildren()) do
 if t:IsA("Tool") and not skip[t.Name] then table.insert(snacksToEat, t) end
 end
-for _, t in ipairs(snacksToEat) do
-t.Parent = charCache
-t:Activate()
+for _, t in ipairs(charCache:GetChildren()) do
+if t:IsA("Tool") and not skip[t.Name] and not table.find(snacksToEat, t) then table.insert(snacksToEat, t) end
 end
-task.wait()
-for _, t in ipairs(snacksToEat) do t.Parent = player.Backpack end
+for _, t in ipairs(snacksToEat) do
+if t.Parent ~= charCache then
+t.Parent = charCache
+end
+end
+task.wait(0.1)
+for _, t in ipairs(snacksToEat) do
+pcall(function() t:Activate() end)
+end
+task.wait(0.5)
+for _, t in ipairs(snacksToEat) do
+if t.Parent then t.Parent = player.Backpack end
+end
 end
 end)
 end)
@@ -1757,15 +1854,21 @@ end)
 do
 local proteinBtn = Instance.new("TextButton", f2)
 proteinBtn.Size = UDim2.new(1, -10, 0, 30)
-proteinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 proteinBtn.Text = "Auto Eat Protein Egg [OFF]"
 proteinBtn.TextColor3 = Color3.new(1, 1, 1)
 ui.toggleButtons["autoProteinEgg"] = proteinBtn
 local proteinState = false
+toggleBtnStates[proteinBtn] = false
 SetToggle[proteinBtn] = function(newState)
 proteinState = newState
+toggleBtnStates[proteinBtn] = newState
 proteinBtn.Text = "Auto Eat Protein Egg " .. (proteinState and " [ON]" or " [OFF]")
-proteinBtn.BackgroundColor3 = proteinState and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
+if proteinState then
+proteinBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+else
+local r, g, b = Config.ThemeR or 25, Config.ThemeG or 25, Config.ThemeB or 25
+proteinBtn.BackgroundColor3 = Color3.fromRGB(math.clamp(r+15, 0, 255), math.clamp(g+15, 0, 255), math.clamp(b+15, 0, 255))
+end
 end
 proteinBtn.MouseButton1Click:Connect(function()
 if not proteinState then
@@ -2617,7 +2720,7 @@ if name == "" then return end
 local totalGlitchSeconds = State.glitchAccumulated + (State.autoGlitch and (os.time() - State.glitchStartTime) or 0)
 local preset = {
 config = { SizeValue = ui.sizeBox.Text, WalkSpeed = ui.wsBox.Text, FlySpeed = ui.flySpeedBox.Text, RebirthTarget = ui.rebBox.Text },
-states = { selectedRock = State.selectedRock, selectedMethod = State.selectedMethod, autoGlitch = State.autoGlitch, glitchTotal = totalGlitchSeconds, autoGlitchTrain = State.autoGlitchTrain, autoLiftNoAnim = State.autoLiftNoAnim, autoLiftValue = State.autoLiftValue, autoRebirthTarget = State.autoRebirthTarget, autoRebirthInf = State.autoRebirthInf, selectedTool = State.selectedTool, autoEquip = State.autoEquip, autoClaim = State.autoClaim, autoFortuneWheel = State.autoFortuneWheel, fastPunch = State.fastPunch, autoPunch = State.autoPunch, autoSize = State.autoSize, autoWalkSpeed = State.autoWalkSpeed, fly = State.fly, godMode = State.godMode, lowCpu = State.lowCpu, autoMuscleKing = State.autoMuscleKing, selectedMap = State.selectedMap, selectedGym = State.selectedGym, autoGym = State.autoGym, autoUnequipBoosts = State.autoUnequipBoosts, lockPosition = State.lockedPos ~= nil, walkOnWater = State.walkOnWater, selectedTreadmill = State.selectedTreadmill, autoTreadmill = State.autoTreadmill }
+states = { selectedRock = State.selectedRock, selectedMethod = State.selectedMethod, autoGlitch = State.autoGlitch, glitchTotal = totalGlitchSeconds, autoGlitchTrain = State.autoGlitchTrain, autoLiftNoAnim = State.autoLiftNoAnim, autoLiftValue = State.autoLiftValue, autoRebirthTarget = State.autoRebirthTarget, autoRebirthInf = State.autoRebirthInf, selectedTool = State.selectedTool, autoEquip = State.autoEquip, autoClaim = State.autoClaim, autoFortuneWheel = State.autoFortuneWheel, fastPunch = State.fastPunch, autoPunch = State.autoPunch, autoSize = State.autoSize, autoWalkSpeed = State.autoWalkSpeed, fly = State.fly, godMode = State.godMode, lowCpu = State.lowCpu, autoMuscleKing = State.autoMuscleKing, selectedMap = State.selectedMap, selectedGym = State.selectedGym, autoGym = State.autoGym, autoUnequipBoosts = State.autoUnequipBoosts, lockPosition = State.lockedPos ~= nil, walkOnWater = State.walkOnWater, selectedTreadmill = State.selectedTreadmill, autoTreadmill = State.autoTreadmill, blackScreen = State.blackScreen }
 }
 ui.savedConfigs[name] = preset
 pcall(function() writefile(ui.configFilePath, HttpService:JSONEncode(ui.savedConfigs)) end)
@@ -2648,7 +2751,7 @@ if s then
 for k, v in pairs(s) do if k ~= "glitchTotal" and State[k] ~= nil then State[k] = v end end
 State.glitchAccumulated = s.glitchTotal or 0
 if s.autoGlitch then State.autoGlitch = true; State.glitchStartTime = os.time() else State.autoGlitch = false; State.glitchStartTime = 0 end
-local toggleStateMap = { autoGlitch = "autoGlitch", autoGlitchTrain = "autoGlitchTrain", autoLiftNoAnim = "autoLiftNoAnim", autoLiftValue = "autoLiftValue", autoEquip = "autoEquip", autoRebirthTarget = "autoRebirthTarget", autoRebirthInf = "autoRebirthInf", autoMuscleKing = "autoMuscleKing", autoClaim = "autoClaim", autoPunch = "autoPunch", autoFortuneWheel = "autoFortuneWheel", fastPunch = "fastPunch", lowCpu = "lowCpu", autoSize = "autoSize", autoWalkSpeed = "autoWalkSpeed", fly = "fly", godMode = "godMode", autoUnequipBoosts = "autoUnequipBoosts", autoGym = "autoGym", stopEverything = "stopEverything", trackStats = "trackStats", withoutFormatNum = "withoutFormatNum", viewing = "viewing", lockPosition = "lockPosition", walkOnWater = "walkOnWater", autoTreadmill = "autoTreadmill" }
+local toggleStateMap = { autoGlitch = "autoGlitch", autoGlitchTrain = "autoGlitchTrain", autoLiftNoAnim = "autoLiftNoAnim", autoLiftValue = "autoLiftValue", autoEquip = "autoEquip", autoRebirthTarget = "autoRebirthTarget", autoRebirthInf = "autoRebirthInf", autoMuscleKing = "autoMuscleKing", autoClaim = "autoClaim", autoPunch = "autoPunch", autoFortuneWheel = "autoFortuneWheel", fastPunch = "fastPunch", lowCpu = "lowCpu", autoSize = "autoSize", autoWalkSpeed = "autoWalkSpeed", fly = "fly", godMode = "godMode", autoUnequipBoosts = "autoUnequipBoosts", autoGym = "autoGym", stopEverything = "stopEverything", trackStats = "trackStats", withoutFormatNum = "withoutFormatNum", viewing = "viewing", lockPosition = "lockPosition", walkOnWater = "walkOnWater", autoTreadmill = "autoTreadmill", blackScreen = "blackScreen" }
 for stateKey, toggleKey in pairs(toggleStateMap) do
 local btn = ui.toggleButtons[toggleKey]
 if btn and SetToggle[btn] and s[stateKey] ~= nil then SetToggle[btn](s[stateKey]) end
