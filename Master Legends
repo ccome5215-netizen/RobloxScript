@@ -11,7 +11,7 @@ local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
-local SCRIPT_VERSION = "1.11"
+local SCRIPT_VERSION = "1.12"
 local player = Players.LocalPlayer
 local oldUI = getgenv().ML_Expert_UI
 local oldLoops = getgenv().ML_Expert_Loops
@@ -1330,7 +1330,6 @@ end
 return val
 end)
 createToggle(f_nolag, "Less Lag", "lowCpu", function(val) State.lowCpu = val; return val end)
-if isOwner then
 createToggle(f_nolag, "Boost Your FPS", "fpsBoost", function(val)
 if val then
 if typeof(setfpscap) == "function" then setfpscap(9999) end
@@ -1364,7 +1363,6 @@ pcall(function() settings().Rendering.QualityLevel = 3 end)
 end
 return val
 end)
-end
 createToggle(f_nolag, "Black Screen", "blackScreen", function(val)
 State.blackScreen = val
 if val then
