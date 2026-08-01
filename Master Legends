@@ -68,6 +68,7 @@ local originalFogEnd = Lighting.FogEnd
 local originalBrightness = Lighting.Brightness
 local originalGlobalShadows = Lighting.GlobalShadows
 local hiddenGuis = {}
+local hiddenParts = {}
 
 rockData = {
 ["Tiny Rock"] = {req = 0, name = "Tiny Rock", idx = 1, glitchValue = 0.025},
@@ -1267,7 +1268,7 @@ local tabs = { "Auto Farm", "Farm", "Stats", "Auto Gym", "Auto Treadmill", "Auto
 if isOwner then table.insert(tabs, "Glitchable Rebirth") end
 if isOwner then table.insert(tabs, "Calculator") end
 table.insert(tabs, "Teleport")
-table.insert(tabs, "No Lag")
+table.insert(tabs, "Ultra No Lag")
 table.insert(tabs, "UI Color")
 table.insert(tabs, "Config")
 table.insert(tabs, "Killer")
@@ -1303,7 +1304,7 @@ end
 end
 
 do
-local f_nolag = ui.frames["No Lag"]
+local f_nolag = ui.frames["Ultra No Lag"]
 createToggle(f_nolag, "Less Lag", "lowCpu", function(val) State.lowCpu = val; return val end)
 if isOwner then
 createToggle(f_nolag, "Boost Your FPS", "fpsBoost", function(val)
@@ -1311,7 +1312,10 @@ if val then
 if typeof(setfpscap) == "function" then setfpscap(9999) end
 Lighting.GlobalShadows = false
 Lighting.Brightness = 0
+if Lighting.FogEnd ~= 0 and Lighting.FogEnd < 1e9 then
+originalFogEnd = Lighting.FogEnd
 Lighting.FogEnd = 0
+end
 pcall(function() settings().Rendering.QualityLevel = 1 end)
 for _, v in ipairs(workspace:GetDescendants()) do
 if v:IsA("BasePart") then
@@ -1324,7 +1328,9 @@ end
 else
 Lighting.GlobalShadows = true
 Lighting.Brightness = 2
-Lighting.FogEnd = 100000
+if originalFogEnd then
+Lighting.FogEnd = originalFogEnd
+end
 pcall(function() settings().Rendering.QualityLevel = 3 end)
 end
 return val
@@ -1357,6 +1363,17 @@ hiddenGuis[gui] = true
 end
 end
 end
+task.spawn(function()
+for _, v in ipairs(workspace:GetDescendants()) do
+if v:IsA("BasePart") and v.Transparency ~= 1 then
+hiddenParts[v] = v.Transparency
+v.Transparency = 1
+elseif (v:IsA("Decal") or v:IsA("Texture")) and v.Transparency ~= 1 then
+hiddenParts[v] = v.Transparency
+v.Transparency = 1
+end
+end
+end)
 else
 Lighting.FogEnd = originalFogEnd
 Lighting.Brightness = originalBrightness
@@ -1368,6 +1385,12 @@ gui.Enabled = true
 end
 end
 hiddenGuis = {}
+for v, trans in pairs(hiddenParts) do
+if v and v.Parent then
+v.Transparency = trans
+end
+end
+hiddenParts = {}
 end
 return val
 end)
