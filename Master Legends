@@ -1307,7 +1307,9 @@ end
 do
 local f_nolag = ui.frames["No Lag"]
 local antiAfkConnection = nil
-createToggle(f_nolag, "Anti-Afk", "antiAfk", function(val)
+local fpsBoostState = {}
+
+local afkBtn = createToggle(f_nolag, "Anti-Afk", "antiAfk", function(val)
 State.antiAfk = val
 if val then
 if antiAfkConnection then antiAfkConnection:Disconnect() end
@@ -1329,40 +1331,70 @@ end
 end
 return val
 end)
+
 createToggle(f_nolag, "Less Lag", "lowCpu", function(val) State.lowCpu = val; return val end)
+
 createToggle(f_nolag, "Boost Your FPS", "fpsBoost", function(val)
 if val then
-if typeof(setfpscap) == "function" then setfpscap(9999) end
+fpsBoostState.originalBrightness = Lighting.Brightness
+fpsBoostState.originalGlobalShadows = Lighting.GlobalShadows
+if Lighting.FogEnd > 0 and Lighting.FogEnd < 1e9 then
+fpsBoostState.originalFogEnd = Lighting.FogEnd
+else
+fpsBoostState.originalFogEnd = nil
+end
+
 Lighting.GlobalShadows = false
 Lighting.Brightness = 0
-if Lighting.FogEnd ~= 0 and Lighting.FogEnd < 1e9 then
-originalFogEnd = Lighting.FogEnd
-Lighting.FogEnd = 0
-end
+if fpsBoostState.originalFogEnd then Lighting.FogEnd = 0 end
+
+if typeof(setfpscap) == "function" then setfpscap(9999) end
 pcall(function() settings().Rendering.QualityLevel = 1 end)
+
 for _, v in ipairs(workspace:GetDescendants()) do
 if v:IsA("BasePart") then
+fpsBoostState[v] = { Material = v.Material, Reflectance = v.Reflectance, CastShadow = v.CastShadow }
 v.Material = Enum.Material.SmoothPlastic
 v.Reflectance = 0
 v.CastShadow = false
 elseif v:IsA("Decal") or v:IsA("Texture") then
+fpsBoostState[v] = { Transparency = v.Transparency }
 v.Transparency = 1
 elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+fpsBoostState[v] = { Enabled = v.Enabled }
 v.Enabled = false
 elseif v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") then
+fpsBoostState[v] = { Enabled = v.Enabled }
 v.Enabled = false
 end
 end
 else
-Lighting.GlobalShadows = true
-Lighting.Brightness = 2
-if originalFogEnd then
-Lighting.FogEnd = originalFogEnd
-end
+Lighting.GlobalShadows = fpsBoostState.originalGlobalShadows or true
+Lighting.Brightness = fpsBoostState.originalBrightness or 2
+if fpsBoostState.originalFogEnd then Lighting.FogEnd = fpsBoostState.originalFogEnd end
+
 pcall(function() settings().Rendering.QualityLevel = 3 end)
+
+for v, props in pairs(fpsBoostState) do
+if typeof(v) == "Instance" and v.Parent then
+if v:IsA("BasePart") then
+v.Material = props.Material
+v.Reflectance = props.Reflectance
+v.CastShadow = props.CastShadow
+elseif v:IsA("Decal") or v:IsA("Texture") then
+v.Transparency = props.Transparency
+elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+v.Enabled = props.Enabled
+elseif v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") then
+v.Enabled = props.Enabled
+end
+end
+end
+table.clear(fpsBoostState)
 end
 return val
 end)
+
 createToggle(f_nolag, "Black Screen", "blackScreen", function(val)
 State.blackScreen = val
 if val then
@@ -1466,6 +1498,13 @@ ui._origDisplayOrder = nil
 end
 end
 return val
+end)
+
+task.spawn(function()
+task.wait(1)
+if afkBtn and SetToggle[afkBtn] then
+SetToggle[afkBtn](true)
+end
 end)
 end
 
