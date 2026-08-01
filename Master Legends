@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local VirtualUser = game:GetService("VirtualUser")
 local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
@@ -42,7 +43,7 @@ selectedTreadmill = nil, autoTreadmill = false, autoTreadmillThread = nil,
 initialPets = {}, initialAuras = {},
 autoProteinEgg = false, proteinEggInterval = 10,
 lastSelectedMap = nil, lastSelectedGym = nil,
-blackScreen = false
+blackScreen = false, antiAfk = false
 }
 local KillerState = {
 selectedPlayers = {}, manualWhitelist = {}, autoWhitelist = {}, whitelistFriendsEnabled = false,
@@ -1268,7 +1269,7 @@ local tabs = { "Auto Farm", "Farm", "Stats", "Auto Gym", "Auto Treadmill", "Auto
 if isOwner then table.insert(tabs, "Glitchable Rebirth") end
 if isOwner then table.insert(tabs, "Calculator") end
 table.insert(tabs, "Teleport")
-table.insert(tabs, "Ultra No Lag")
+table.insert(tabs, "No Lag")
 table.insert(tabs, "UI Color")
 table.insert(tabs, "Config")
 table.insert(tabs, "Killer")
@@ -1304,7 +1305,30 @@ end
 end
 
 do
-local f_nolag = ui.frames["Ultra No Lag"]
+local f_nolag = ui.frames["No Lag"]
+local antiAfkConnection = nil
+createToggle(f_nolag, "Anti-Afk", "antiAfk", function(val)
+State.antiAfk = val
+if val then
+if antiAfkConnection then antiAfkConnection:Disconnect() end
+antiAfkConnection = player.Idled:Connect(function()
+task.spawn(function()
+pcall(function()
+VirtualUser:CaptureController()
+VirtualUser:Button2Down(Vector2.new(), workspace.CurrentCamera.CFrame)
+task.wait()
+VirtualUser:Button2Up(Vector2.new(), workspace.CurrentCamera.CFrame)
+end)
+end)
+end)
+else
+if antiAfkConnection then
+antiAfkConnection:Disconnect()
+antiAfkConnection = nil
+end
+end
+return val
+end)
 createToggle(f_nolag, "Less Lag", "lowCpu", function(val) State.lowCpu = val; return val end)
 if isOwner then
 createToggle(f_nolag, "Boost Your FPS", "fpsBoost", function(val)
@@ -1321,8 +1345,13 @@ for _, v in ipairs(workspace:GetDescendants()) do
 if v:IsA("BasePart") then
 v.Material = Enum.Material.SmoothPlastic
 v.Reflectance = 0
+v.CastShadow = false
 elseif v:IsA("Decal") or v:IsA("Texture") then
 v.Transparency = 1
+elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+v.Enabled = false
+elseif v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") then
+v.Enabled = false
 end
 end
 else
@@ -1347,7 +1376,7 @@ Lighting.Brightness = 0
 Lighting.GlobalShadows = false
 pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false) end)
 for _, gui in ipairs(game:GetService("CoreGui"):GetChildren()) do
-if gui:IsA("ScreenGui") and gui.Name ~= "MuscleLegendsHub" and gui.Name ~= "ML_KeySystem" and gui.Name ~= "ML_ConfirmPopup" then
+if gui:IsA("ScreenGui") and gui.Name ~= "MuscleLegendsHub" and gui.Name ~= "ML_KeySystem" and gui.Name ~= "ML_ConfirmPopup" and gui.Name ~= "ML_BlackScreen" then
 if gui.Enabled then
 gui.Enabled = false
 hiddenGuis[gui] = true
@@ -1361,6 +1390,38 @@ if gui:IsA("ScreenGui") and gui.Enabled then
 gui.Enabled = false
 hiddenGuis[gui] = true
 end
+end
+end
+for _, gui in ipairs(workspace:GetDescendants()) do
+if gui:IsA("BillboardGui") or gui:IsA("SurfaceGui") or gui:IsA("ScreenGui") then
+if gui.Enabled then
+gui.Enabled = false
+hiddenGuis[gui] = true
+end
+end
+end
+if not ui.blackScreenGui then
+local bsGui = Instance.new("ScreenGui")
+bsGui.Name = "ML_BlackScreen"
+bsGui.ResetOnSpawn = false
+bsGui.DisplayOrder = 100
+bsGui.IgnoreGuiInset = true
+pcall(function() bsGui.Parent = game:GetService("CoreGui") end)
+local bsFrame = Instance.new("Frame", bsGui)
+bsFrame.Name = "BlackCover"
+bsFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+bsFrame.BorderSizePixel = 0
+bsFrame.Size = UDim2.new(1, 0, 1, 0)
+bsFrame.ZIndex = 100
+ui.blackScreenGui = bsGui
+end
+local cg = game:GetService("CoreGui")
+if ui._origDisplayOrder == nil then ui._origDisplayOrder = {} end
+for _, name in ipairs({"MuscleLegendsHub", "ML_KeySystem", "ML_ConfirmPopup"}) do
+local g = cg:FindFirstChild(name)
+if g and g:IsA("ScreenGui") then
+if ui._origDisplayOrder[name] == nil then ui._origDisplayOrder[name] = g.DisplayOrder end
+g.DisplayOrder = 200
 end
 end
 task.spawn(function()
@@ -1391,6 +1452,20 @@ v.Transparency = trans
 end
 end
 hiddenParts = {}
+if ui.blackScreenGui then
+ui.blackScreenGui:Destroy()
+ui.blackScreenGui = nil
+end
+local cg2 = game:GetService("CoreGui")
+if ui._origDisplayOrder then
+for _, name in ipairs({"MuscleLegendsHub", "ML_KeySystem", "ML_ConfirmPopup"}) do
+local g = cg2:FindFirstChild(name)
+if g and g:IsA("ScreenGui") then
+g.DisplayOrder = ui._origDisplayOrder[name] or 0
+end
+end
+ui._origDisplayOrder = nil
+end
 end
 return val
 end)
@@ -2743,7 +2818,7 @@ if name == "" then return end
 local totalGlitchSeconds = State.glitchAccumulated + (State.autoGlitch and (os.time() - State.glitchStartTime) or 0)
 local preset = {
 config = { SizeValue = ui.sizeBox.Text, WalkSpeed = ui.wsBox.Text, FlySpeed = ui.flySpeedBox.Text, RebirthTarget = ui.rebBox.Text },
-states = { selectedRock = State.selectedRock, selectedMethod = State.selectedMethod, autoGlitch = State.autoGlitch, glitchTotal = totalGlitchSeconds, autoGlitchTrain = State.autoGlitchTrain, autoLiftNoAnim = State.autoLiftNoAnim, autoLiftValue = State.autoLiftValue, autoRebirthTarget = State.autoRebirthTarget, autoRebirthInf = State.autoRebirthInf, selectedTool = State.selectedTool, autoEquip = State.autoEquip, autoClaim = State.autoClaim, autoFortuneWheel = State.autoFortuneWheel, fastPunch = State.fastPunch, autoPunch = State.autoPunch, autoSize = State.autoSize, autoWalkSpeed = State.autoWalkSpeed, fly = State.fly, godMode = State.godMode, lowCpu = State.lowCpu, autoMuscleKing = State.autoMuscleKing, selectedMap = State.selectedMap, selectedGym = State.selectedGym, autoGym = State.autoGym, autoUnequipBoosts = State.autoUnequipBoosts, lockPosition = State.lockedPos ~= nil, walkOnWater = State.walkOnWater, selectedTreadmill = State.selectedTreadmill, autoTreadmill = State.autoTreadmill, blackScreen = State.blackScreen }
+states = { selectedRock = State.selectedRock, selectedMethod = State.selectedMethod, autoGlitch = State.autoGlitch, glitchTotal = totalGlitchSeconds, autoGlitchTrain = State.autoGlitchTrain, autoLiftNoAnim = State.autoLiftNoAnim, autoLiftValue = State.autoLiftValue, autoRebirthTarget = State.autoRebirthTarget, autoRebirthInf = State.autoRebirthInf, selectedTool = State.selectedTool, autoEquip = State.autoEquip, autoClaim = State.autoClaim, autoFortuneWheel = State.autoFortuneWheel, fastPunch = State.fastPunch, autoPunch = State.autoPunch, autoSize = State.autoSize, autoWalkSpeed = State.autoWalkSpeed, fly = State.fly, godMode = State.godMode, lowCpu = State.lowCpu, autoMuscleKing = State.autoMuscleKing, selectedMap = State.selectedMap, selectedGym = State.selectedGym, autoGym = State.autoGym, autoUnequipBoosts = State.autoUnequipBoosts, lockPosition = State.lockedPos ~= nil, walkOnWater = State.walkOnWater, selectedTreadmill = State.selectedTreadmill, autoTreadmill = State.autoTreadmill, blackScreen = State.blackScreen, antiAfk = State.antiAfk }
 }
 ui.savedConfigs[name] = preset
 pcall(function() writefile(ui.configFilePath, HttpService:JSONEncode(ui.savedConfigs)) end)
@@ -2774,7 +2849,7 @@ if s then
 for k, v in pairs(s) do if k ~= "glitchTotal" and State[k] ~= nil then State[k] = v end end
 State.glitchAccumulated = s.glitchTotal or 0
 if s.autoGlitch then State.autoGlitch = true; State.glitchStartTime = os.time() else State.autoGlitch = false; State.glitchStartTime = 0 end
-local toggleStateMap = { autoGlitch = "autoGlitch", autoGlitchTrain = "autoGlitchTrain", autoLiftNoAnim = "autoLiftNoAnim", autoLiftValue = "autoLiftValue", autoEquip = "autoEquip", autoRebirthTarget = "autoRebirthTarget", autoRebirthInf = "autoRebirthInf", autoMuscleKing = "autoMuscleKing", autoClaim = "autoClaim", autoPunch = "autoPunch", autoFortuneWheel = "autoFortuneWheel", fastPunch = "fastPunch", lowCpu = "lowCpu", autoSize = "autoSize", autoWalkSpeed = "autoWalkSpeed", fly = "fly", godMode = "godMode", autoUnequipBoosts = "autoUnequipBoosts", autoGym = "autoGym", stopEverything = "stopEverything", trackStats = "trackStats", withoutFormatNum = "withoutFormatNum", viewing = "viewing", lockPosition = "lockPosition", walkOnWater = "walkOnWater", autoTreadmill = "autoTreadmill", blackScreen = "blackScreen" }
+local toggleStateMap = { autoGlitch = "autoGlitch", autoGlitchTrain = "autoGlitchTrain", autoLiftNoAnim = "autoLiftNoAnim", autoLiftValue = "autoLiftValue", autoEquip = "autoEquip", autoRebirthTarget = "autoRebirthTarget", autoRebirthInf = "autoRebirthInf", autoMuscleKing = "autoMuscleKing", autoClaim = "autoClaim", autoPunch = "autoPunch", autoFortuneWheel = "autoFortuneWheel", fastPunch = "fastPunch", lowCpu = "lowCpu", autoSize = "autoSize", autoWalkSpeed = "autoWalkSpeed", fly = "fly", godMode = "godMode", autoUnequipBoosts = "autoUnequipBoosts", autoGym = "autoGym", stopEverything = "stopEverything", trackStats = "trackStats", withoutFormatNum = "withoutFormatNum", viewing = "viewing", lockPosition = "lockPosition", walkOnWater = "walkOnWater", autoTreadmill = "autoTreadmill", blackScreen = "blackScreen", antiAfk = "antiAfk" }
 for stateKey, toggleKey in pairs(toggleStateMap) do
 local btn = ui.toggleButtons[toggleKey]
 if btn and SetToggle[btn] and s[stateKey] ~= nil then SetToggle[btn](s[stateKey]) end
